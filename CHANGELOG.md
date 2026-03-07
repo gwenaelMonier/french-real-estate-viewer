@@ -1,5 +1,13 @@
 # Changelog — French real estate viewer
 
+## 1.3.0 — Year range slider
+
+- **Dual-handle year slider** for the evolution mode
+- Custom CSS for range slider with fill between the two handles
+- Dynamic selection of base year and end year
+
+---
+
 ## 1.2.0 — Filter panel
 
 - **Filter control panel** positioned top-left on the map

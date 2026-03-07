@@ -51,6 +51,35 @@
         font-size: 11px;
         color: #555;
       }
+      .filter-control {
+        background: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+        font-size: 13px;
+      }
+      .filter-control b {
+        display: block;
+        margin-bottom: 6px;
+      }
+      .filter-control label {
+        display: block;
+        cursor: pointer;
+        padding: 2px 0;
+      }
+      .filter-control input {
+        margin-right: 5px;
+        cursor: pointer;
+      }
+      .filter-control select {
+        width: 100%;
+        margin-top: 2px;
+        font-size: 13px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 2px 4px;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -68,13 +97,53 @@
         maxZoom: 19,
       }).addTo(map);
 
-      // Échelle de couleur (percentiles P2/P98)
-      const prices = COMMUNES.map((c) => c.avg_m2).sort((a, b) => a - b);
-      const p2 = prices[Math.floor(prices.length * 0.02)];
-      const p98 = prices[Math.floor(prices.length * 0.98)];
+      // Filtres actifs
+      let activeFilter = "all"; // 'all' | 'maison' | 'appart'
+      let activeYear = "all"; // 'all' | '2019' | '2020' | ...
+
+      // Pré-calcul des échelles P3/P97 pour chaque combinaison année × type
+      const scales = {};
+      for (const year of ["all", ...YEARS.map(String)]) {
+        for (const [filterKey, field] of [
+          ["all", "avg_m2"],
+          ["maison", "avg_m2_maison"],
+          ["appart", "avg_m2_appart"],
+        ]) {
+          const vals = COMMUNES.map((c) => {
+            const s = year === "all" ? c : c.years?.[year];
+            return s ? s[field] : null;
+          })
+            .filter((v) => v != null)
+            .sort((a, b) => a - b);
+          scales[`${year}_${filterKey}`] = {
+            p3: vals[Math.floor(vals.length * 0.03)],
+            p97: vals[Math.floor(vals.length * 0.97)],
+          };
+        }
+      }
+
+      function getStats(c) {
+        if (activeYear === "all") return c;
+        return c.years?.[activeYear] ?? null;
+      }
+      function getPrice(c) {
+        const s = getStats(c);
+        if (!s) return null;
+        if (activeFilter === "all") return s.avg_m2;
+        if (activeFilter === "maison") return s.avg_m2_maison;
+        return s.avg_m2_appart;
+      }
+      function getNb(c) {
+        const s = getStats(c);
+        if (!s) return null;
+        if (activeFilter === "all") return s.nb;
+        if (activeFilter === "maison") return s.nb_maison;
+        return s.nb_appart;
+      }
 
       function priceToColor(price) {
-        const t = Math.max(0, Math.min(1, (price - p2) / (p98 - p2)));
+        const { p3, p97 } = scales[`${activeYear}_${activeFilter}`];
+        const t = Math.max(0, Math.min(1, (price - p3) / (p97 - p3)));
         return `hsl(${Math.round(120 * (1 - t))}, 80%, 45%)`;
       }
 
@@ -112,12 +181,13 @@
       let tooltip = null;
 
       // Polygones par commune via VectorGrid (tuiles canvas, seul le visible est rendu)
+      let grid = null;
       fetch(
         "https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/communes-version-simplifiee.geojson",
       )
         .then((r) => r.json())
         .then((geojson) => {
-          const grid = L.vectorGrid
+          grid = L.vectorGrid
             .slicer(geojson, {
               rendererFactory: L.canvas.tile,
               vectorTileLayerStyles: {
@@ -132,9 +202,19 @@
                       opacity: 0.2,
                     };
                   }
+                  const price = getPrice(c);
+                  if (price == null) {
+                    return {
+                      fill: false,
+                      stroke: true,
+                      color: "#aaa",
+                      weight: 0.3,
+                      opacity: 0.2,
+                    };
+                  }
                   return {
                     fill: true,
-                    fillColor: priceToColor(c.avg_m2),
+                    fillColor: priceToColor(price),
                     fillOpacity: 0.45,
                     stroke: true,
                     color: "#555",
@@ -152,11 +232,14 @@
             if (isDragging) return;
             const c = communeIndex[e.layer.properties.code];
             if (!c) return;
+            const price = getPrice(c);
+            if (price == null) return;
+            const nb = getNb(c);
             tooltip = L.tooltip({ sticky: true })
               .setContent(
                 `<b>${c.nom_commune}</b> (${c.code_dep})<br>` +
-                  `${c.avg_m2.toLocaleString("fr-FR")} €/m²<br>` +
-                  `<small>${c.nb} ventes</small>`,
+                  `${price.toLocaleString("fr-FR")} €/m²<br>` +
+                  `<small>${nb} ventes</small>`,
               )
               .setLatLng(e.latlng)
               .addTo(map);
@@ -171,21 +254,63 @@
           grid.on("mouseout", clearTooltip);
         });
 
-      // Légende
-      const legend = L.control({ position: "bottomright" });
-      legend.onAdd = function () {
-        const div = L.DomUtil.create("div", "legend");
-        div.innerHTML =
+      // Légende dynamique
+      let legendDiv = null;
+      function updateLegend() {
+        if (!legendDiv) return;
+        const { p3, p97 } = scales[`${activeYear}_${activeFilter}`];
+        legendDiv.innerHTML =
           "<b>Prix moyen au m²</b>" +
           '<div class="legend-gradient"></div>' +
           '<div class="legend-labels">' +
-          `<span>${Math.round(p2).toLocaleString("fr-FR")} €</span>` +
-          `<span>${Math.round((p2 + p98) / 2).toLocaleString("fr-FR")} €</span>` +
-          `<span>${Math.round(p98).toLocaleString("fr-FR")} €</span>` +
+          `<span>${Math.round(p3).toLocaleString("fr-FR")} €</span>` +
+          `<span>${Math.round((p3 + p97) / 2).toLocaleString("fr-FR")} €</span>` +
+          `<span>${Math.round(p97).toLocaleString("fr-FR")} €</span>` +
           "</div>";
-        return div;
+      }
+
+      const legend = L.control({ position: "bottomright" });
+      legend.onAdd = function () {
+        legendDiv = L.DomUtil.create("div", "legend");
+        updateLegend();
+        return legendDiv;
       };
       legend.addTo(map);
+
+      // Encart filtre
+      const filterControl = L.control({ position: "topright" });
+      filterControl.onAdd = function () {
+        const div = L.DomUtil.create("div", "filter-control");
+        L.DomEvent.disableClickPropagation(div);
+        div.innerHTML =
+          "<b>Type de bien</b>" +
+          ["all", "maison", "appart"]
+            .map((v) => {
+              const label =
+                v === "all"
+                  ? "Tous"
+                  : v === "maison"
+                    ? "Maison"
+                    : "Appartement";
+              const checked = v === "all" ? "checked" : "";
+              return `<label><input type="radio" name="filter" value="${v}" ${checked}>${label}</label>`;
+            })
+            .join("") +
+          '<b style="display:block;margin-top:8px;margin-bottom:6px;">Année</b>' +
+          '<select name="year">' +
+          '<option value="all">Toutes</option>' +
+          YEARS.map((y) => `<option value="${y}">${y}</option>`).join("") +
+          "</select>";
+        div.addEventListener("change", (e) => {
+          if (e.target.name === "filter") activeFilter = e.target.value;
+          if (e.target.name === "year") activeYear = e.target.value;
+          clearTooltip();
+          if (grid) grid.redraw();
+          updateLegend();
+        });
+        return div;
+      };
+      filterControl.addTo(map);
     </script>
   </body>
 </html>

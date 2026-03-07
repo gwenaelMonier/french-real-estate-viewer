@@ -1,6 +1,16 @@
 # Changelog — French real estate viewer
 
-## 0.2.1 — Bug fixes (archive/3-bug-fixed)
+## 0.3.0 — Property type and year filters
+
+- **Interactive filters**: All / House / Apartment radio buttons + All / individual year dropdown
+- Pre-computed P3/P97 scales for each `year × type` combination
+- `getStats()`, `getPrice()`, `getNb()` functions to access data by active filters
+- Dynamic legend recomputed on each filter change
+- **`process.py`**: added yearly aggregates (`years[year]`) and per-type fields (`avg_m2_maison`, `avg_m2_appart`, etc.)
+
+---
+
+## 0.2.1 — Bug fixes
 
 - Added `clearTooltip()` to prevent ghost tooltips on drag/zoom
 - Proper handling of `zoomstart` / `zoomend` / `dragstart` / `dragend` events

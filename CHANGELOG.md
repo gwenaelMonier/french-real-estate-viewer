@@ -1,5 +1,18 @@
 # Changelog — French real estate viewer
 
+## 1.1.0 — Median price and evolution mode
+
+- **Calculation mode**: Mean / Median selector (applies to both Price and Evolution modes)
+- **Evolution mode**: visualizes % change between a base year and the latest available year
+  - Green→red gradient centered on 0%
+  - Conditional "Since" selector (replaces the Year selector in Evolution mode)
+  - Tooltip: `+X.X% (2020→2025)` with base and recent price
+  - Adapted legend: `−range% | 0% | +range%`
+- **`process.py`**: added `med_m2`, `med_m2_maison`, `med_m2_appart` columns via `MEDIAN()` in global and yearly aggregates
+- Minimum sale thresholds: `HAVING COUNT(*) >= 10` (global) and `>= 5` (per year)
+
+---
+
 ## 1.0.0 — MapLibre GL migration
 
 - **Migration Leaflet → MapLibre GL** (WebGL rendering, native vector tiles)

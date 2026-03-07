@@ -3,7 +3,9 @@ from collections import defaultdict
 
 CSV = 'data/full_dvf.csv'  # chemin vers le fichier 3.5 Go
 
-STAT_COLS = ['avg_m2', 'avg_m2_maison', 'avg_m2_appart', 'nb', 'nb_maison', 'nb_appart']
+STAT_COLS = ['avg_m2', 'avg_m2_maison', 'avg_m2_appart',
+            'med_m2', 'med_m2_maison', 'med_m2_appart',
+            'nb', 'nb_maison', 'nb_appart']
 
 DEDUP_CTE = """
     WITH raw AS (
@@ -52,6 +54,9 @@ global_rows = duckdb.execute(f"""
         ROUND(AVG(prix_m2)) AS avg_m2,
         ROUND(AVG(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS avg_m2_maison,
         ROUND(AVG(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS avg_m2_appart,
+        ROUND(MEDIAN(prix_m2)) AS med_m2,
+        ROUND(MEDIAN(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS med_m2_maison,
+        ROUND(MEDIAN(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS med_m2_appart,
         COUNT(*) AS nb,
         COUNT(CASE WHEN type_local = 'Maison' THEN 1 END) AS nb_maison,
         COUNT(CASE WHEN type_local = 'Appartement' THEN 1 END) AS nb_appart,
@@ -59,11 +64,13 @@ global_rows = duckdb.execute(f"""
         ROUND(AVG(longitude), 5) AS lon
     FROM dedup
     GROUP BY code_commune, nom_commune, code_departement
+    HAVING COUNT(*) >= 5
     ORDER BY code_commune
 """).fetchall()
 
 global_cols = ['code_commune', 'nom_commune', 'code_dep',
                'avg_m2', 'avg_m2_maison', 'avg_m2_appart',
+               'med_m2', 'med_m2_maison', 'med_m2_appart',
                'nb', 'nb_maison', 'nb_appart', 'lat', 'lon']
 communes = {r[0]: dict(zip(global_cols, r)) for r in global_rows}
 
@@ -104,16 +111,21 @@ year_rows = duckdb.execute(f"""
         ROUND(AVG(prix_m2)) AS avg_m2,
         ROUND(AVG(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS avg_m2_maison,
         ROUND(AVG(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS avg_m2_appart,
+        ROUND(MEDIAN(prix_m2)) AS med_m2,
+        ROUND(MEDIAN(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS med_m2_maison,
+        ROUND(MEDIAN(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS med_m2_appart,
         COUNT(*) AS nb,
         COUNT(CASE WHEN type_local = 'Maison' THEN 1 END) AS nb_maison,
         COUNT(CASE WHEN type_local = 'Appartement' THEN 1 END) AS nb_appart
     FROM dedup
     GROUP BY code_commune, annee
+    HAVING COUNT(*) >= 3
     ORDER BY code_commune, annee
 """).fetchall()
 
 year_cols = ['code_commune', 'annee',
              'avg_m2', 'avg_m2_maison', 'avg_m2_appart',
+             'med_m2', 'med_m2_maison', 'med_m2_appart',
              'nb', 'nb_maison', 'nb_appart']
 
 all_years = set()

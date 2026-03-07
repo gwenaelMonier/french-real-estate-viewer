@@ -42,6 +42,9 @@
         border-radius: 3px;
         margin: 6px 0 4px;
       }
+      .legend-gradient-evol {
+        background: linear-gradient(to right, hsl(120,80%,45%), hsl(60,80%,45%), hsl(0,80%,45%));
+      }
       .legend-labels {
         display: flex;
         justify-content: space-between;
@@ -77,6 +80,11 @@
         padding: 2px 4px;
         cursor: pointer;
       }
+      .filter-control small {
+        display: block;
+        color: #666;
+        margin-top: 2px;
+      }
       .maplibregl-popup-content {
         font-family: sans-serif;
         font-size: 13px;
@@ -103,26 +111,57 @@
 
       // Filtres actifs
       let activeFilter = "all"; // 'all' | 'maison' | 'appart'
-      let activeYear = "all"; // 'all' | '2019' | '2020' | ...
+      let activeYear = "all";   // 'all' | '2019' | '2020' | ...
+      let activeMode = 'prix';  // 'prix' | 'evolution'
+      let activeCalc = 'moyenne'; // 'moyenne' | 'mediane'
+      const LATEST_YEAR = String(Math.max(...YEARS));
+      let baseYear = String(YEARS[0]);
 
-      // Pré-calcul des échelles P3/P97 pour chaque combinaison année × type
+      // Pré-calcul des échelles P3/P97 pour chaque combinaison calc × année × type
       const scales = {};
-      for (const year of ["all", ...YEARS.map(String)]) {
-        for (const [filterKey, field] of [
-          ["all", "avg_m2"],
-          ["maison", "avg_m2_maison"],
-          ["appart", "avg_m2_appart"],
-        ]) {
-          const vals = COMMUNES.map((c) => {
-            const s = year === "all" ? c : c.years?.[year];
-            return s ? s[field] : null;
-          })
-            .filter((v) => v != null)
-            .sort((a, b) => a - b);
-          scales[`${year}_${filterKey}`] = {
-            p3: vals[Math.floor(vals.length * 0.03)],
-            p97: vals[Math.floor(vals.length * 0.97)],
-          };
+      for (const calc of ['moyenne', 'mediane']) {
+        for (const year of ["all", ...YEARS.map(String)]) {
+          for (const [filterKey, avgField, medField] of [
+            ["all", "avg_m2", "med_m2"],
+            ["maison", "avg_m2_maison", "med_m2_maison"],
+            ["appart", "avg_m2_appart", "med_m2_appart"],
+          ]) {
+            const field = calc === 'mediane' ? medField : avgField;
+            const vals = COMMUNES.map((c) => {
+              const s = year === "all" ? c : c.years?.[year];
+              return s ? s[field] : null;
+            })
+              .filter((v) => v != null)
+              .sort((a, b) => a - b);
+            scales[`${year}_${filterKey}_${calc}`] = {
+              p3: vals[Math.floor(vals.length * 0.03)],
+              p97: vals[Math.floor(vals.length * 0.97)],
+            };
+          }
+        }
+      }
+
+      // Pré-calcul des échelles d'évolution (pour chaque calc × filtre × baseYear)
+      const evolutionScales = {};
+      for (const [filterKey, avgField, medField] of [
+        ['all', 'avg_m2', 'med_m2'],
+        ['maison', 'avg_m2_maison', 'med_m2_maison'],
+        ['appart', 'avg_m2_appart', 'med_m2_appart'],
+      ]) {
+        for (const calc of ['moyenne', 'mediane']) {
+          const field = calc === 'mediane' ? medField : avgField;
+          for (const baseYr of YEARS.slice(0, -1).map(String)) {
+            const evols = COMMUNES.map(c => {
+              const base = c.years?.[baseYr]?.[field];
+              const latest = c.years?.[LATEST_YEAR]?.[field];
+              if (!base || !latest) return null;
+              return (latest - base) / base * 100;
+            }).filter(v => v != null).sort((a, b) => a - b);
+            evolutionScales[`${baseYr}_${filterKey}_${calc}`] = {
+              p3: evols[Math.floor(evols.length * 0.03)],
+              p97: evols[Math.floor(evols.length * 0.97)],
+            };
+          }
         }
       }
 
@@ -130,12 +169,17 @@
         if (activeYear === "all") return c;
         return c.years?.[activeYear] ?? null;
       }
+      function priceField() {
+        const prefix = activeCalc === 'mediane' ? 'med' : 'avg';
+        if (activeFilter === 'all') return `${prefix}_m2`;
+        if (activeFilter === 'maison') return `${prefix}_m2_maison`;
+        return `${prefix}_m2_appart`;
+      }
+
       function getPrice(c) {
         const s = getStats(c);
         if (!s) return null;
-        if (activeFilter === "all") return s.avg_m2;
-        if (activeFilter === "maison") return s.avg_m2_maison;
-        return s.avg_m2_appart;
+        return s[priceField()] ?? null;
       }
       function getNb(c) {
         const s = getStats(c);
@@ -146,8 +190,23 @@
       }
 
       function priceToColor(price) {
-        const { p3, p97 } = scales[`${activeYear}_${activeFilter}`];
+        const { p3, p97 } = scales[`${activeYear}_${activeFilter}_${activeCalc}`];
         const t = Math.max(0, Math.min(1, (price - p3) / (p97 - p3)));
+        return `hsl(${Math.round(120 * (1 - t))}, 80%, 45%)`;
+      }
+
+      function getEvolution(c) {
+        const field = priceField();
+        const base = c.years?.[baseYear]?.[field];
+        const latest = c.years?.[LATEST_YEAR]?.[field];
+        if (!base || !latest) return null;
+        return (latest - base) / base * 100;
+      }
+
+      function evolutionToColor(pct) {
+        const { p3, p97 } = evolutionScales[`${baseYear}_${activeFilter}_${activeCalc}`];
+        const range = Math.max(Math.abs(p3), Math.abs(p97));
+        const t = Math.max(0, Math.min(1, (pct + range) / (2 * range)));
         return `hsl(${Math.round(120 * (1 - t))}, 80%, 45%)`;
       }
 
@@ -164,12 +223,25 @@
         geojson.features.forEach((f) => {
           const code = String(f.properties.code);
           const c = communeIndex[code];
-          const price = c ? getPrice(c) : null;
-          f.properties.fillColor = price != null ? priceToColor(price) : '';
           f.properties.nomCommune = c?.nom_commune ?? f.properties.nom ?? '';
           f.properties.codeDep = c?.code_dep ?? '';
-          f.properties.price = price != null ? price : -1;
-          f.properties.nb = (c ? getNb(c) : null) ?? 0;
+
+          if (activeMode === 'prix') {
+            const price = c ? getPrice(c) : null;
+            f.properties.fillColor = price != null ? priceToColor(price) : '';
+            f.properties.price = price != null ? price : -1;
+            f.properties.nb = (c ? getNb(c) : null) ?? 0;
+            f.properties.evol = -999;
+          } else {
+            const evol = c ? getEvolution(c) : null;
+            f.properties.fillColor = evol != null ? evolutionToColor(evol) : '';
+            f.properties.evol = evol != null ? evol : -999;
+            const field = priceField();
+            f.properties.priceBase = c?.years?.[baseYear]?.[field] ?? -1;
+            f.properties.priceLatest = c?.years?.[LATEST_YEAR]?.[field] ?? -1;
+            f.properties.price = -1;
+            f.properties.nb = 0;
+          }
         });
         return geojson;
       }
@@ -187,42 +259,72 @@
       // Légende dynamique
       const legendDiv = document.getElementById('legend');
       function updateLegend() {
-        const { p3, p97 } = scales[`${activeYear}_${activeFilter}`];
-        legendDiv.innerHTML =
-          "<b>Prix moyen au m²</b>" +
-          '<div class="legend-gradient"></div>' +
-          '<div class="legend-labels">' +
-          `<span>${Math.round(p3).toLocaleString("fr-FR")} €</span>` +
-          `<span>${Math.round((p3 + p97) / 2).toLocaleString("fr-FR")} €</span>` +
-          `<span>${Math.round(p97).toLocaleString("fr-FR")} €</span>` +
-          "</div>";
+        if (activeMode === 'prix') {
+          const { p3, p97 } = scales[`${activeYear}_${activeFilter}_${activeCalc}`];
+          legendDiv.innerHTML =
+            "<b>Prix moyen au m²</b>" +
+            '<div class="legend-gradient"></div>' +
+            '<div class="legend-labels">' +
+            `<span>${Math.round(p3).toLocaleString("fr-FR")} €</span>` +
+            `<span>${Math.round((p3 + p97) / 2).toLocaleString("fr-FR")} €</span>` +
+            `<span>${Math.round(p97).toLocaleString("fr-FR")} €</span>` +
+            "</div>";
+        } else {
+          const { p3, p97 } = evolutionScales[`${baseYear}_${activeFilter}_${activeCalc}`];
+          const range = Math.max(Math.abs(p3), Math.abs(p97));
+          legendDiv.innerHTML =
+            `<b>Évolution ${baseYear}→${LATEST_YEAR}</b>` +
+            '<div class="legend-gradient legend-gradient-evol"></div>' +
+            '<div class="legend-labels">' +
+            `<span>${(-range).toFixed(0)}%</span><span>0%</span><span>+${range.toFixed(0)}%</span>` +
+            '</div>';
+        }
       }
       updateLegend();
 
       // Encart filtre
       const filterDiv = document.getElementById('filter-control');
-      filterDiv.innerHTML =
-        "<b>Type de bien</b>" +
-        ["all", "maison", "appart"]
-          .map((v) => {
-            const label =
-              v === "all"
-                ? "Tous"
-                : v === "maison"
-                  ? "Maison"
-                  : "Appartement";
-            const checked = v === "all" ? "checked" : "";
-            return `<label><input type="radio" name="filter" value="${v}" ${checked}>${label}</label>`;
-          })
-          .join("") +
-        '<b style="display:block;margin-top:8px;margin-bottom:6px;">Année</b>' +
-        '<select name="year">' +
-        '<option value="all">Toutes</option>' +
-        YEARS.map((y) => `<option value="${y}">${y}</option>`).join("") +
-        "</select>";
+
+      function renderFilterPanel() {
+        filterDiv.innerHTML =
+          '<b>Mode de calcul</b>' +
+          '<select name="calc">' +
+          `<option value="moyenne"${activeCalc === 'moyenne' ? ' selected' : ''}>Moyenne</option>` +
+          `<option value="mediane"${activeCalc === 'mediane' ? ' selected' : ''}>Médiane</option>` +
+          '</select>' +
+          '<b style="display:block;margin-top:8px;margin-bottom:6px;">Mode</b>' +
+          '<label><input type="radio" name="mode" value="prix" ' + (activeMode === 'prix' ? 'checked' : '') + '> Prix moyen</label>' +
+          '<label><input type="radio" name="mode" value="evolution" ' + (activeMode === 'evolution' ? 'checked' : '') + '> Évolution</label>' +
+          '<b style="display:block;margin-top:8px;margin-bottom:6px;">Type de bien</b>' +
+          ["all", "maison", "appart"]
+            .map((v) => {
+              const label = v === "all" ? "Tous" : v === "maison" ? "Maison" : "Appartement";
+              const checked = v === activeFilter ? "checked" : "";
+              return `<label><input type="radio" name="filter" value="${v}" ${checked}>${label}</label>`;
+            })
+            .join("") +
+          (activeMode === 'prix'
+            ? '<b style="display:block;margin-top:8px;margin-bottom:6px;">Année</b>' +
+              '<select name="year">' +
+              '<option value="all"' + (activeYear === 'all' ? ' selected' : '') + '>Toutes</option>' +
+              YEARS.map((y) => `<option value="${y}"${String(y) === activeYear ? ' selected' : ''}>${y}</option>`).join("") +
+              '</select>'
+            : '<b style="display:block;margin-top:8px;margin-bottom:6px;">Depuis</b>' +
+              '<select name="baseYear">' +
+              YEARS.slice(0, -1).map(y => `<option value="${y}"${String(y) === baseYear ? ' selected' : ''}>${y}</option>`).join('') +
+              '</select>' +
+              `<small>jusqu'en ${LATEST_YEAR}</small>`
+          );
+      }
+
+      renderFilterPanel();
+
       filterDiv.addEventListener("change", (e) => {
+        if (e.target.name === "calc") activeCalc = e.target.value;
+        if (e.target.name === "mode") { activeMode = e.target.value; renderFilterPanel(); }
         if (e.target.name === "filter") activeFilter = e.target.value;
         if (e.target.name === "year") activeYear = e.target.value;
+        if (e.target.name === "baseYear") baseYear = e.target.value;
         popup.remove();
         redrawCommunes();
         updateLegend();
@@ -267,9 +369,15 @@
               const p = e.features[0].properties;
               if (!p.nomCommune) return;
               map.getCanvas().style.cursor = 'pointer';
-              const html = p.price >= 0
+              const html = activeMode === 'evolution' && p.evol > -999
+                ? `<b>${p.nomCommune}</b> (${p.codeDep})<br>`
+                  + `${p.evol >= 0 ? '+' : ''}${Number(p.evol).toFixed(1)}%`
+                  + ` (${baseYear}→${LATEST_YEAR})<br>`
+                  + `<small>${Number(p.priceBase).toLocaleString('fr-FR')} → `
+                  + `${Number(p.priceLatest).toLocaleString('fr-FR')} €/m²</small>`
+                : activeMode === 'prix' && p.price >= 0
                 ? `<b>${p.nomCommune}</b> (${p.codeDep})<br>${Number(p.price).toLocaleString('fr-FR')} €/m²<br><small>${p.nb} ventes</small>`
-                : `<b>${p.nomCommune}</b><br><small style="color:#999">Aucune vente</small>`;
+                : `<b>${p.nomCommune}</b><br><small style="color:#999">Aucune donnée</small>`;
               popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
             });
 

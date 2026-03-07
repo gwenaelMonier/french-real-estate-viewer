@@ -1,5 +1,17 @@
 # Changelog — French real estate viewer
 
+## 1.0.0 — MapLibre GL migration
+
+- **Migration Leaflet → MapLibre GL** (WebGL rendering, native vector tiles)
+- CartoDB Voyager GL basemap (`voyager-gl-style/style.json`)
+- Two MapLibre layers: `communes-fill` (colored polygons) + `communes-line` (borders)
+- Client-side GeoJSON enrichment (`enrichGeoJSON`): `fillColor`, `price`, `nb` injected into properties
+- Single reused MapLibre popup instance
+- Filter panel and legend positioned as absolute HTML elements (no `L.control`)
+- City labels removed (handled natively by the GL style)
+
+---
+
 ## 0.4.0 — Major cities and CartoDB
 
 - Basemap replaced with **CartoDB Voyager** (no labels, raster)

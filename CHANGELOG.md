@@ -1,5 +1,12 @@
 # Changelog — French real estate viewer
 
+## 0.2.1 — Bug fixes (archive/3-bug-fixed)
+
+- Added `clearTooltip()` to prevent ghost tooltips on drag/zoom
+- Proper handling of `zoomstart` / `zoomend` / `dragstart` / `dragend` events
+
+---
+
 ## 0.2.0 — Municipality polygons
 
 - Switched from **circles to municipality polygons** (GeoJSON `communes-version-simplifiee.geojson`)

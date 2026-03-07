@@ -57,6 +57,7 @@
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.vectorgrid@1.3.0/dist/Leaflet.VectorGrid.bundled.min.js"></script>
     <script src="communes.js"></script>
     <script>
       const map = L.map("map").setView([46.603354, 1.888334], 6);
@@ -79,10 +80,25 @@
 
       // Flag drag pour bloquer les tooltips pendant le déplacement
       let isDragging = false;
+      function clearTooltip() {
+        if (tooltip) {
+          tooltip.remove();
+          tooltip = null;
+        }
+      }
+
       map.on("dragstart", () => {
         isDragging = true;
+        clearTooltip();
       });
       map.on("dragend", () => {
+        isDragging = false;
+      });
+      map.on("zoomstart", () => {
+        isDragging = true;
+        clearTooltip();
+      });
+      map.on("zoomend", () => {
         isDragging = false;
       });
 
@@ -92,60 +108,67 @@
         communeIndex[c.code_commune] = c;
       });
 
-      // Polygones par commune
+      // Tooltip unique réutilisé
+      let tooltip = null;
+
+      // Polygones par commune via VectorGrid (tuiles canvas, seul le visible est rendu)
       fetch(
         "https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/communes-version-simplifiee.geojson",
       )
         .then((r) => r.json())
-        .then((data) => {
-          L.geoJSON(data, {
-            style(feature) {
-              const c = communeIndex[feature.properties.code];
-              if (!c)
-                return {
-                  fillOpacity: 0,
-                  color: "#aaa",
-                  weight: 0.3,
-                  opacity: 0.3,
-                };
-              return {
-                fillColor: priceToColor(c.avg_m2),
-                fillOpacity: 0.45,
-                color: "#555",
-                weight: 0.4,
-                opacity: 0.4,
-              };
-            },
-            onEachFeature(feature, layer) {
-              const c = communeIndex[feature.properties.code];
-              if (!c) return;
-              const content =
+        .then((geojson) => {
+          const grid = L.vectorGrid
+            .slicer(geojson, {
+              rendererFactory: L.canvas.tile,
+              vectorTileLayerStyles: {
+                sliced(properties) {
+                  const c = communeIndex[properties.code];
+                  if (!c) {
+                    return {
+                      fill: false,
+                      stroke: true,
+                      color: "#aaa",
+                      weight: 0.3,
+                      opacity: 0.2,
+                    };
+                  }
+                  return {
+                    fill: true,
+                    fillColor: priceToColor(c.avg_m2),
+                    fillOpacity: 0.45,
+                    stroke: true,
+                    color: "#555",
+                    weight: 0.4,
+                    opacity: 0.3,
+                  };
+                },
+              },
+              interactive: true,
+              getFeatureId: (f) => f.properties.code,
+            })
+            .addTo(map);
+
+          grid.on("mouseover", (e) => {
+            if (isDragging) return;
+            const c = communeIndex[e.layer.properties.code];
+            if (!c) return;
+            tooltip = L.tooltip({ sticky: true })
+              .setContent(
                 `<b>${c.nom_commune}</b> (${c.code_dep})<br>` +
-                `${c.avg_m2.toLocaleString("fr-FR")} €/m²<br>` +
-                `<small>${c.nb} ventes</small>`;
-              let tooltip = null;
-              layer.on("mouseover", (e) => {
-                if (isDragging) return;
-                tooltip = L.tooltip({ sticky: true })
-                  .setContent(content)
-                  .setLatLng(e.latlng)
-                  .addTo(map);
-              });
-              layer.on("mousemove", (e) => {
-                if (!tooltip) return;
-                if (isDragging) {
-                  tooltip.remove();
-                  tooltip = null;
-                } else tooltip.setLatLng(e.latlng);
-              });
-              layer.on("mouseout", () => {
-                if (tooltip) {
-                  tooltip.remove();
-                  tooltip = null;
-                }
-              });
-            },
-          }).addTo(map);
+                  `${c.avg_m2.toLocaleString("fr-FR")} €/m²<br>` +
+                  `<small>${c.nb} ventes</small>`,
+              )
+              .setLatLng(e.latlng)
+              .addTo(map);
+          });
+
+          map.on("mousemove", (e) => {
+            if (!tooltip) return;
+            if (isDragging) clearTooltip();
+            else tooltip.setLatLng(e.latlng);
+          });
+
+          grid.on("mouseout", clearTooltip);
         });
 
       // Légende

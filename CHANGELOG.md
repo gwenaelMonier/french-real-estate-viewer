@@ -1,5 +1,14 @@
 # Changelog — French real estate viewer
 
+## 0.4.0 — Major cities and CartoDB
+
+- Basemap replaced with **CartoDB Voyager** (no labels, raster)
+- Dedicated `labelsPane` to display labels above polygons
+- 42 major cities hardcoded as textual `DivIcon` markers with conditional `minZoom`
+- CartoDB `light_only_labels` tiles enabled from zoom 10
+
+---
+
 ## 0.3.0 — Property type and year filters
 
 - **Interactive filters**: All / House / Apartment radio buttons + All / individual year dropdown

@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Carte interactive de la France</title>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css"
-    />
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
     <style>
       * {
         margin: 0;
@@ -22,25 +22,23 @@
         height: 100vh;
         outline: none;
       }
+      /* ── Legend ─────────────────────────────────── */
       .legend {
         background: white;
         padding: 10px 14px;
-        border-radius: 6px;
-        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
-        line-height: 1.6;
-        font-size: 13px;
+        border-radius: 8px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 12px;
+        color: #334155;
       }
+      .legend b { font-weight: 600; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
       .legend-gradient {
         width: 160px;
-        height: 12px;
-        background: linear-gradient(
-          to right,
-          hsl(120, 80%, 45%),
-          hsl(60, 80%, 45%),
-          hsl(0, 80%, 45%)
-        );
-        border-radius: 3px;
-        margin: 6px 0 4px;
+        height: 10px;
+        background: linear-gradient(to right, hsl(120,80%,45%), hsl(60,80%,45%), hsl(0,80%,45%));
+        border-radius: 99px;
+        margin: 7px 0 5px;
       }
       .legend-gradient-evol {
         background: linear-gradient(to right, hsl(120,80%,45%), hsl(60,80%,45%), hsl(0,80%,45%));
@@ -48,56 +46,116 @@
       .legend-labels {
         display: flex;
         justify-content: space-between;
-        font-size: 11px;
-        color: #555;
+        font-size: 10px;
+        color: #94a3b8;
       }
+
+      /* ── Filter panel ────────────────────────────── */
       .filter-control {
+        background: #ffffff;
+        padding: 20px 20px 18px;
+        border-radius: 14px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 14px;
+        width: 300px;
+        color: #1e293b;
+      }
+      .filter-section { margin-bottom: 15px; }
+      .filter-section:last-child { margin-bottom: 0; }
+      .filter-label-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 7px;
+      }
+      .filter-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: #94a3b8;
+      }
+      .filter-label-hint {
+        font-size: 11px;
+        color: #cbd5e1;
+        font-weight: 500;
+      }
+      .filter-divider {
+        border: none;
+        border-top: 1px solid #f1f5f9;
+        margin: 16px 0;
+      }
+
+      /* Segmented controls */
+      .seg-group {
+        display: flex;
+        background: #f1f5f9;
+        border-radius: 9px;
+        padding: 4px;
+        gap: 3px;
+      }
+      .seg-group input[type="radio"] { display: none; }
+      .seg-group label {
+        flex: 1;
+        text-align: center;
+        padding: 7px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        color: #94a3b8;
+        transition: color 0.15s;
+        white-space: nowrap;
+        user-select: none;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+      .seg-group label:hover { color: #475569; }
+      .seg-group input[type="radio"]:checked + label {
         background: white;
-        padding: 8px 12px;
-        border-radius: 6px;
-        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
-        font-size: 13px;
+        color: #0f172a;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.10), 0 0 0 0.5px rgba(0,0,0,0.04);
       }
-      .filter-control b {
-        display: block;
-        margin-bottom: 6px;
-      }
-      .filter-control label {
-        display: block;
-        cursor: pointer;
-        padding: 2px 0;
-      }
-      .filter-control input {
-        margin-right: 5px;
-        cursor: pointer;
-      }
-      .filter-control select {
+
+      /* Year select */
+      .filter-select {
         width: 100%;
-        margin-top: 2px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
         font-size: 13px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        padding: 2px 4px;
+        font-weight: 500;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 8px 32px 8px 12px;
         cursor: pointer;
+        background-color: #f8fafc;
+        color: #334155;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        transition: border-color 0.15s, box-shadow 0.15s;
       }
-      .filter-control small {
-        display: block;
-        color: #666;
-        margin-top: 2px;
+      .filter-select:focus {
+        outline: none;
+        border-color: #94a3b8;
+        box-shadow: 0 0 0 3px rgba(148,163,184,0.15);
       }
+
+      /* Popup */
       .maplibregl-popup-content {
-        font-family: sans-serif;
+        font-family: 'Plus Jakarta Sans', sans-serif;
         font-size: 13px;
-        padding: 8px 10px;
-        border-radius: 6px;
+        padding: 9px 12px;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
       }
     </style>
   </head>
   <body>
     <div id="map"></div>
 
-    <div id="legend" class="legend" style="position:absolute;bottom:36px;right:10px;z-index:1;"></div>
-    <div id="filter-control" class="filter-control" style="position:absolute;top:10px;right:10px;z-index:1;"></div>
+    <div id="legend" class="legend" style="position:absolute;bottom:36px;left:10px;z-index:1;"></div>
+    <div id="filter-control" class="filter-control" style="position:absolute;top:10px;left:10px;z-index:1;"></div>
 
     <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
     <script src="communes.js"></script>
@@ -261,8 +319,9 @@
       function updateLegend() {
         if (activeMode === 'prix') {
           const { p3, p97 } = scales[`${activeYear}_${activeFilter}_${activeCalc}`];
+          const titre = activeCalc === 'mediane' ? 'Prix médian au m²' : 'Prix moyen au m²';
           legendDiv.innerHTML =
-            "<b>Prix moyen au m²</b>" +
+            `<b>${titre}</b>` +
             '<div class="legend-gradient"></div>' +
             '<div class="legend-labels">' +
             `<span>${Math.round(p3).toLocaleString("fr-FR")} €</span>` +
@@ -273,7 +332,7 @@
           const { p3, p97 } = evolutionScales[`${baseYear}_${activeFilter}_${activeCalc}`];
           const range = Math.max(Math.abs(p3), Math.abs(p97));
           legendDiv.innerHTML =
-            `<b>Évolution ${baseYear}→${LATEST_YEAR}</b>` +
+            `<b>Évolution ${baseYear} ${ARROW_DARK} ${LATEST_YEAR}</b>` +
             '<div class="legend-gradient legend-gradient-evol"></div>' +
             '<div class="legend-labels">' +
             `<span>${(-range).toFixed(0)}%</span><span>0%</span><span>+${range.toFixed(0)}%</span>` +
@@ -285,36 +344,55 @@
       // Encart filtre
       const filterDiv = document.getElementById('filter-control');
 
+      // Flèche SVG réutilisable
+      const ARR = (color = '#cbd5e1') =>
+        `<svg width="14" height="8" viewBox="0 0 14 8" fill="none" style="vertical-align:middle;margin:0 2px"><path d="M1 4h12M9 1l4 3-4 3" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      const ARROW = ARR();                 // gris clair (panel)
+      const ARROW_DARK = ARR('#475569');   // slate-600 (tooltip, légende)
+
+      function seg(name, options, active) {
+        return '<div class="seg-group">' +
+          options.map(([val, label]) =>
+            `<input type="radio" name="${name}" id="seg-${name}-${val}" value="${val}"${active === val ? ' checked' : ''}>` +
+            `<label for="seg-${name}-${val}">${label}</label>`
+          ).join('') +
+          '</div>';
+      }
+
       function renderFilterPanel() {
+        const yearSection = activeMode === 'prix'
+          ? `<div class="filter-section">
+              <div class="filter-label-row"><span class="filter-label">Année</span></div>
+              <select name="year" class="filter-select">
+                <option value="all"${activeYear === 'all' ? ' selected' : ''}>Toutes les années</option>
+                ${YEARS.map(y => `<option value="${y}"${String(y) === activeYear ? ' selected' : ''}>${y}</option>`).join('')}
+              </select>
+            </div>`
+          : `<div class="filter-section">
+              <div class="filter-label-row">
+                <span class="filter-label">Depuis</span>
+                <span class="filter-label-hint">${ARROW} ${LATEST_YEAR}</span>
+              </div>
+              <select name="baseYear" class="filter-select">
+                ${YEARS.slice(0, -1).map(y => `<option value="${y}"${String(y) === baseYear ? ' selected' : ''}>${y}</option>`).join('')}
+              </select>
+            </div>`;
+
         filterDiv.innerHTML =
-          '<b>Mode de calcul</b>' +
-          '<select name="calc">' +
-          `<option value="moyenne"${activeCalc === 'moyenne' ? ' selected' : ''}>Moyenne</option>` +
-          `<option value="mediane"${activeCalc === 'mediane' ? ' selected' : ''}>Médiane</option>` +
-          '</select>' +
-          '<b style="display:block;margin-top:8px;margin-bottom:6px;">Mode</b>' +
-          '<label><input type="radio" name="mode" value="prix" ' + (activeMode === 'prix' ? 'checked' : '') + '> Prix moyen</label>' +
-          '<label><input type="radio" name="mode" value="evolution" ' + (activeMode === 'evolution' ? 'checked' : '') + '> Évolution</label>' +
-          '<b style="display:block;margin-top:8px;margin-bottom:6px;">Type de bien</b>' +
-          ["all", "maison", "appart"]
-            .map((v) => {
-              const label = v === "all" ? "Tous" : v === "maison" ? "Maison" : "Appartement";
-              const checked = v === activeFilter ? "checked" : "";
-              return `<label><input type="radio" name="filter" value="${v}" ${checked}>${label}</label>`;
-            })
-            .join("") +
-          (activeMode === 'prix'
-            ? '<b style="display:block;margin-top:8px;margin-bottom:6px;">Année</b>' +
-              '<select name="year">' +
-              '<option value="all"' + (activeYear === 'all' ? ' selected' : '') + '>Toutes</option>' +
-              YEARS.map((y) => `<option value="${y}"${String(y) === activeYear ? ' selected' : ''}>${y}</option>`).join("") +
-              '</select>'
-            : '<b style="display:block;margin-top:8px;margin-bottom:6px;">Depuis</b>' +
-              '<select name="baseYear">' +
-              YEARS.slice(0, -1).map(y => `<option value="${y}"${String(y) === baseYear ? ' selected' : ''}>${y}</option>`).join('') +
-              '</select>' +
-              `<small>jusqu'en ${LATEST_YEAR}</small>`
-          );
+          `<div class="filter-section">
+            <div class="filter-label-row"><span class="filter-label">Affichage</span></div>
+            ${seg('mode', [['prix', 'Prix moyen'], ['evolution', 'Évolution']], activeMode)}
+          </div>
+          <div class="filter-section">
+            <div class="filter-label-row"><span class="filter-label">Type de bien</span></div>
+            ${seg('filter', [['all', 'Tous'], ['maison', 'Maison'], ['appart', 'Appart']], activeFilter)}
+          </div>
+          <div class="filter-section">
+            <div class="filter-label-row"><span class="filter-label">Calcul</span></div>
+            ${seg('calc', [['moyenne', 'Moyenne'], ['mediane', 'Médiane']], activeCalc)}
+          </div>
+          <hr class="filter-divider">
+          ${yearSection}`;
       }
 
       renderFilterPanel();
@@ -372,8 +450,8 @@
               const html = activeMode === 'evolution' && p.evol > -999
                 ? `<b>${p.nomCommune}</b> (${p.codeDep})<br>`
                   + `${p.evol >= 0 ? '+' : ''}${Number(p.evol).toFixed(1)}%`
-                  + ` (${baseYear}→${LATEST_YEAR})<br>`
-                  + `<small>${Number(p.priceBase).toLocaleString('fr-FR')} → `
+                  + ` (${baseYear} ${ARROW_DARK} ${LATEST_YEAR})<br>`
+                  + `<small>${Number(p.priceBase).toLocaleString('fr-FR')} ${ARROW_DARK} `
                   + `${Number(p.priceLatest).toLocaleString('fr-FR')} €/m²</small>`
                 : activeMode === 'prix' && p.price >= 0
                 ? `<b>${p.nomCommune}</b> (${p.codeDep})<br>${Number(p.price).toLocaleString('fr-FR')} €/m²<br><small>${p.nb} ventes</small>`

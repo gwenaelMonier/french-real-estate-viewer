@@ -64,7 +64,7 @@ global_rows = duckdb.execute(f"""
         ROUND(AVG(longitude), 5) AS lon
     FROM dedup
     GROUP BY code_commune, nom_commune, code_departement
-    HAVING COUNT(*) >= 5
+    HAVING COUNT(*) >= 10
     ORDER BY code_commune
 """).fetchall()
 
@@ -119,7 +119,7 @@ year_rows = duckdb.execute(f"""
         COUNT(CASE WHEN type_local = 'Appartement' THEN 1 END) AS nb_appart
     FROM dedup
     GROUP BY code_commune, annee
-    HAVING COUNT(*) >= 3
+    HAVING COUNT(*) >= 5
     ORDER BY code_commune, annee
 """).fetchall()
 

@@ -1,5 +1,13 @@
 # Changelog — French real estate viewer
 
+## 1.2.0 — Filter panel
+
+- **Filter control panel** positioned top-left on the map
+- Dedicated CSS classes: `.filter-control`, `.filter-section`, `.filter-label`, `.filter-select`
+- HTML structure for property type and year selectors
+
+---
+
 ## 1.1.0 — Median price and evolution mode
 
 - **Calculation mode**: Mean / Median selector (applies to both Price and Evolution modes)

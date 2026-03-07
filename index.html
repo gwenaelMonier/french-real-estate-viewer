@@ -67,22 +67,7 @@
         maxZoom: 19,
       }).addTo(map);
 
-      fetch(
-        "https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements.geojson",
-      )
-        .then((r) => r.json())
-        .then((data) => {
-          L.geoJSON(data, {
-            style: {
-              color: "#555",
-              weight: 1,
-              fillOpacity: 0,
-              opacity: 0.3,
-            },
-          }).addTo(map);
-        });
-
-      // Échelle de couleur (percentiles P5/P95)
+      // Échelle de couleur (percentiles P2/P98)
       const prices = COMMUNES.map((c) => c.avg_m2).sort((a, b) => a - b);
       const p2 = prices[Math.floor(prices.length * 0.02)];
       const p98 = prices[Math.floor(prices.length * 0.98)];
@@ -92,23 +77,76 @@
         return `hsl(${Math.round(120 * (1 - t))}, 80%, 45%)`;
       }
 
-      // Cercles par commune
-      COMMUNES.forEach((c) => {
-        if (!c.lat || !c.lon) return;
-        L.circleMarker([c.lat, c.lon], {
-          radius: 5,
-          color: "transparent",
-          fillColor: priceToColor(c.avg_m2),
-          fillOpacity: 0.75,
-        })
-          .bindTooltip(
-            `<b>${c.nom_commune}</b> (${c.code_dep})<br>` +
-              `${c.avg_m2.toLocaleString("fr-FR")} €/m²<br>` +
-              `<small>${c.nb} ventes</small>`,
-            { sticky: true },
-          )
-          .addTo(map);
+      // Flag drag pour bloquer les tooltips pendant le déplacement
+      let isDragging = false;
+      map.on("dragstart", () => {
+        isDragging = true;
       });
+      map.on("dragend", () => {
+        isDragging = false;
+      });
+
+      // Index COMMUNES par code_commune
+      const communeIndex = {};
+      COMMUNES.forEach((c) => {
+        communeIndex[c.code_commune] = c;
+      });
+
+      // Polygones par commune
+      fetch(
+        "https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/communes-version-simplifiee.geojson",
+      )
+        .then((r) => r.json())
+        .then((data) => {
+          L.geoJSON(data, {
+            style(feature) {
+              const c = communeIndex[feature.properties.code];
+              if (!c)
+                return {
+                  fillOpacity: 0,
+                  color: "#aaa",
+                  weight: 0.3,
+                  opacity: 0.3,
+                };
+              return {
+                fillColor: priceToColor(c.avg_m2),
+                fillOpacity: 0.45,
+                color: "#555",
+                weight: 0.4,
+                opacity: 0.4,
+              };
+            },
+            onEachFeature(feature, layer) {
+              const c = communeIndex[feature.properties.code];
+              if (!c) return;
+              const content =
+                `<b>${c.nom_commune}</b> (${c.code_dep})<br>` +
+                `${c.avg_m2.toLocaleString("fr-FR")} €/m²<br>` +
+                `<small>${c.nb} ventes</small>`;
+              let tooltip = null;
+              layer.on("mouseover", (e) => {
+                if (isDragging) return;
+                tooltip = L.tooltip({ sticky: true })
+                  .setContent(content)
+                  .setLatLng(e.latlng)
+                  .addTo(map);
+              });
+              layer.on("mousemove", (e) => {
+                if (!tooltip) return;
+                if (isDragging) {
+                  tooltip.remove();
+                  tooltip = null;
+                } else tooltip.setLatLng(e.latlng);
+              });
+              layer.on("mouseout", () => {
+                if (tooltip) {
+                  tooltip.remove();
+                  tooltip = null;
+                }
+              });
+            },
+          }).addTo(map);
+        });
 
       // Légende
       const legend = L.control({ position: "bottomright" });

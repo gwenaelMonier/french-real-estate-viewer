@@ -1,6 +1,6 @@
 import duckdb, json
 
-CSV = '../../data/full_dvf.csv'  # chemin vers le fichier 3.5 Go
+CSV = 'data/full_dvf.csv'  # chemin vers le fichier 3.5 Go
 
 rows = duckdb.execute("""
     WITH dedup AS (

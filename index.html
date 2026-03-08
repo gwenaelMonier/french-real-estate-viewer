@@ -4,10 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Carte interactive de la France</title>
-    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <style>
       * {
         margin: 0;
@@ -27,21 +33,37 @@
         background: white;
         padding: 10px 14px;
         border-radius: 8px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+        font-family: "Plus Jakarta Sans", sans-serif;
         font-size: 12px;
         color: #334155;
       }
-      .legend b { font-weight: 600; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+      .legend b {
+        font-weight: 600;
+        font-size: 11px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
       .legend-gradient {
         width: 160px;
         height: 10px;
-        background: linear-gradient(to right, hsl(120,80%,45%), hsl(60,80%,45%), hsl(0,80%,45%));
+        background: linear-gradient(
+          to right,
+          hsl(120, 80%, 45%),
+          hsl(60, 80%, 45%),
+          hsl(0, 80%, 45%)
+        );
         border-radius: 99px;
         margin: 7px 0 5px;
       }
       .legend-gradient-evol {
-        background: linear-gradient(to right, hsl(120,80%,45%), hsl(60,80%,45%), hsl(0,80%,45%));
+        background: linear-gradient(
+          to right,
+          hsl(120, 80%, 45%),
+          hsl(60, 80%, 45%),
+          hsl(0, 80%, 45%)
+        );
       }
       .legend-labels {
         display: flex;
@@ -55,14 +77,20 @@
         background: #ffffff;
         padding: 20px 20px 18px;
         border-radius: 14px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        box-shadow:
+          0 4px 20px rgba(0, 0, 0, 0.1),
+          0 1px 4px rgba(0, 0, 0, 0.06);
+        font-family: "Plus Jakarta Sans", sans-serif;
         font-size: 14px;
         width: 300px;
         color: #1e293b;
       }
-      .filter-section { margin-bottom: 15px; }
-      .filter-section:last-child { margin-bottom: 0; }
+      .filter-section {
+        margin-bottom: 15px;
+      }
+      .filter-section:last-child {
+        margin-bottom: 0;
+      }
       .filter-label-row {
         display: flex;
         justify-content: space-between;
@@ -95,7 +123,9 @@
         padding: 4px;
         gap: 3px;
       }
-      .seg-group input[type="radio"] { display: none; }
+      .seg-group input[type="radio"] {
+        display: none;
+      }
       .seg-group label {
         flex: 1;
         text-align: center;
@@ -108,13 +138,17 @@
         transition: color 0.15s;
         white-space: nowrap;
         user-select: none;
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-family: "Plus Jakarta Sans", sans-serif;
       }
-      .seg-group label:hover { color: #475569; }
+      .seg-group label:hover {
+        color: #475569;
+      }
       .seg-group input[type="radio"]:checked + label {
         background: white;
         color: #0f172a;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.10), 0 0 0 0.5px rgba(0,0,0,0.04);
+        box-shadow:
+          0 1px 4px rgba(0, 0, 0, 0.1),
+          0 0 0 0.5px rgba(0, 0, 0, 0.04);
       }
       .seg-group--wrap {
         flex-wrap: wrap;
@@ -143,7 +177,9 @@
         line-height: 1;
         transition: background 0.15s;
       }
-      .info-icon:hover { background: #94a3b8; }
+      .info-icon:hover {
+        background: #94a3b8;
+      }
       .info-icon::after {
         content: attr(data-tip);
         position: absolute;
@@ -156,14 +192,17 @@
         font-weight: 400;
         padding: 5px 9px;
         border-radius: 6px;
-        white-space: nowrap;
+        white-space: normal;
+        width: max-content;
+        max-width: 180px;
+        text-align: center;
         pointer-events: none;
         opacity: 0;
         transition: opacity 0.15s;
         z-index: 100;
       }
       .info-icon::before {
-        content: '';
+        content: "";
         position: absolute;
         bottom: calc(100% + 3px);
         left: 50%;
@@ -176,12 +215,14 @@
         z-index: 100;
       }
       .info-icon:hover::after,
-      .info-icon:hover::before { opacity: 1; }
+      .info-icon:hover::before {
+        opacity: 1;
+      }
 
       /* Year select */
       .filter-select {
         width: 100%;
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-family: "Plus Jakarta Sans", sans-serif;
         font-size: 13px;
         font-weight: 500;
         border: 1.5px solid #e2e8f0;
@@ -194,12 +235,14 @@
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 12px center;
-        transition: border-color 0.15s, box-shadow 0.15s;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
       }
       .filter-select:focus {
         outline: none;
         border-color: #94a3b8;
-        box-shadow: 0 0 0 3px rgba(148,163,184,0.15);
+        box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.15);
       }
 
       /* Dual range slider */
@@ -226,7 +269,8 @@
       }
       .year-slider-bg {
         position: absolute;
-        left: 0; right: 0;
+        left: 0;
+        right: 0;
         height: 4px;
         background: #e2e8f0;
         border-radius: 2px;
@@ -244,28 +288,35 @@
         appearance: none;
         background: transparent;
         pointer-events: none;
-        margin: 0; padding: 0;
+        margin: 0;
+        padding: 0;
       }
       .year-slider::-webkit-slider-thumb {
         appearance: none;
-        width: 18px; height: 18px;
+        width: 18px;
+        height: 18px;
         background: white;
         border: 2px solid #334155;
         border-radius: 50%;
         cursor: pointer;
         pointer-events: auto;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-        transition: transform 0.1s, border-color 0.15s;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+        transition:
+          transform 0.1s,
+          border-color 0.15s;
       }
-      .year-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+      .year-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.2);
+      }
       .year-slider::-moz-range-thumb {
-        width: 18px; height: 18px;
+        width: 18px;
+        height: 18px;
         background: white;
         border: 2px solid #334155;
         border-radius: 50%;
         cursor: pointer;
         pointer-events: auto;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
         box-sizing: border-box;
       }
       .year-slider-ticks {
@@ -277,72 +328,124 @@
       }
 
       /* ── Search control ──────────────────────────── */
-      #search-control { position:absolute; top:10px; left:10px; z-index:2; width:300px; }
-      .search-wrap { position:relative; }
-      #search-input {
-        width:100%; padding:10px 36px 10px 14px;
-        font-family:'Plus Jakarta Sans',sans-serif; font-size:13px;
-        border:none; border-radius:10px;
-        box-shadow:0 4px 20px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
-        background:white; color:#1e293b;
+      #search-control {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 2;
+        width: 300px;
       }
-      #search-input:focus { outline:none; box-shadow:0 4px 20px rgba(0,0,0,0.15); }
+      .search-wrap {
+        position: relative;
+      }
+      #search-input {
+        width: 100%;
+        padding: 10px 36px 10px 14px;
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 13px;
+        border: none;
+        border-radius: 10px;
+        box-shadow:
+          0 4px 20px rgba(0, 0, 0, 0.1),
+          0 1px 4px rgba(0, 0, 0, 0.06);
+        background: white;
+        color: #1e293b;
+      }
+      #search-input:focus {
+        outline: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      }
       #search-clear {
-        position:absolute; right:10px; top:50%; transform:translateY(-50%);
-        background:none; border:none; cursor:pointer; color:#94a3b8; font-size:13px;
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #94a3b8;
+        font-size: 13px;
       }
       #search-results {
-        list-style:none; background:white; border-radius:10px; margin-top:6px;
-        box-shadow:0 4px 20px rgba(0,0,0,0.10); overflow:hidden;
-        max-height:260px; overflow-y:auto;
+        list-style: none;
+        background: white;
+        border-radius: 10px;
+        margin-top: 6px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        max-height: 260px;
+        overflow-y: auto;
       }
       #search-results li {
-        padding:9px 14px; cursor:pointer; font-size:13px;
-        font-family:'Plus Jakarta Sans',sans-serif; color:#1e293b;
-        display:flex; justify-content:space-between; align-items:center;
+        padding: 9px 14px;
+        cursor: pointer;
+        font-size: 13px;
+        font-family: "Plus Jakarta Sans", sans-serif;
+        color: #1e293b;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
-      #search-results li:hover { background:#f1f5f9; }
-      #search-results li .dep { font-size:11px; color:#94a3b8; }
+      #search-results li:hover {
+        background: #f1f5f9;
+      }
+      #search-results li .dep {
+        font-size: 11px;
+        color: #94a3b8;
+      }
 
       /* Popup */
       .maplibregl-popup-content {
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-family: "Plus Jakarta Sans", sans-serif;
         font-size: 13px;
         padding: 9px 12px;
         border-radius: 8px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
       }
     </style>
   </head>
   <body>
     <div id="map"></div>
 
-    <div id="legend" class="legend" style="position:absolute;bottom:36px;left:10px;z-index:1;"></div>
+    <div
+      id="legend"
+      class="legend"
+      style="position: absolute; bottom: 36px; left: 10px; z-index: 1"
+    ></div>
 
     <div id="search-control">
       <div class="search-wrap">
-        <input id="search-input" type="text" placeholder="Rechercher une commune…" autocomplete="off">
+        <input
+          id="search-input"
+          type="text"
+          placeholder="Rechercher une commune…"
+          autocomplete="off"
+        />
         <button id="search-clear" hidden>✕</button>
       </div>
       <ul id="search-results" hidden></ul>
     </div>
 
-    <div id="filter-control" class="filter-control" style="position:absolute;top:76px;left:10px;z-index:1;"></div>
+    <div
+      id="filter-control"
+      class="filter-control"
+      style="position: absolute; top: 76px; left: 10px; z-index: 1"
+    ></div>
 
     <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
     <script src="communes.js"></script>
     <script>
       const map = new maplibregl.Map({
-        container: 'map',
-        style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
+        container: "map",
+        style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
         center: [1.888334, 46.603354],
         zoom: 6,
       });
 
       // Filtres actifs
       let activeFilter = "residentiel"; // 'residentiel' | 'maison' | 'appart' | 'terrain'
-      let activeYear = "all";   // 'all' | '2019' | '2020' | ...
-      let activeMode = 'prix';  // 'prix' | 'evolution'
+      let activeYear = "all"; // 'all' | '2019' | '2020' | ...
+      let activeMode = "prix"; // 'prix' | 'evolution' | 'loyer'
       const LATEST_YEAR = String(Math.max(...YEARS));
       let baseYear = String(YEARS[0]);
       let endYear = LATEST_YEAR;
@@ -372,20 +475,22 @@
       // Pré-calcul des échelles d'évolution (pour chaque filtre × baseYear × endYear)
       const evolutionScales = {};
       for (const [filterKey, medField] of [
-        ['residentiel', 'med_m2'],
-        ['maison', 'med_m2_maison'],
-        ['appart', 'med_m2_appart'],
-        ['terrain', 'med_m2_terrain'],
+        ["residentiel", "med_m2"],
+        ["maison", "med_m2_maison"],
+        ["appart", "med_m2_appart"],
+        ["terrain", "med_m2_terrain"],
       ]) {
         for (const baseYr of YEARS.map(String)) {
           for (const endYr of YEARS.map(String)) {
             if (endYr <= baseYr) continue;
-            const evols = COMMUNES.map(c => {
+            const evols = COMMUNES.map((c) => {
               const base = c.years?.[baseYr]?.[medField];
               const latest = c.years?.[endYr]?.[medField];
               if (!base || !latest) return null;
-              return (latest - base) / base * 100;
-            }).filter(v => v != null).sort((a, b) => a - b);
+              return ((latest - base) / base) * 100;
+            })
+              .filter((v) => v != null)
+              .sort((a, b) => a - b);
             evolutionScales[`${baseYr}_${endYr}_${filterKey}`] = {
               p3: evols[Math.floor(evols.length * 0.03)],
               p97: evols[Math.floor(evols.length * 0.97)],
@@ -394,15 +499,36 @@
         }
       }
 
+      // Pré-calcul des échelles loyer P3/P97 pour chaque combinaison année × type
+      const loyerScales = {};
+      for (const year of ["all", ...YEARS.map(String)]) {
+        for (const [filterKey, field] of [
+          ["residentiel", "loyer_residentiel"],
+          ["maison", "loyer_maison"],
+          ["appart", "loyer_appart"],
+        ]) {
+          const vals = COMMUNES.map((c) => {
+            const s = year === "all" ? c : c.years?.[year];
+            return s ? s[field] : null;
+          })
+            .filter((v) => v != null)
+            .sort((a, b) => a - b);
+          loyerScales[`${year}_${filterKey}`] = {
+            p3: vals[Math.floor(vals.length * 0.03)],
+            p97: vals[Math.floor(vals.length * 0.97)],
+          };
+        }
+      }
+
       function getStats(c) {
         if (activeYear === "all") return c;
         return c.years?.[activeYear] ?? null;
       }
       function priceField() {
-        if (activeFilter === 'residentiel') return 'med_m2';
-        if (activeFilter === 'maison') return 'med_m2_maison';
-        if (activeFilter === 'appart') return 'med_m2_appart';
-        return 'med_m2_terrain';
+        if (activeFilter === "residentiel") return "med_m2";
+        if (activeFilter === "maison") return "med_m2_maison";
+        if (activeFilter === "appart") return "med_m2_appart";
+        return "med_m2_terrain";
       }
 
       function getPrice(c) {
@@ -413,9 +539,9 @@
       function getNb(c) {
         const s = getStats(c);
         if (!s) return null;
-        if (activeFilter === 'residentiel') return s.nb;
-        if (activeFilter === 'maison') return s.nb_maison;
-        if (activeFilter === 'appart') return s.nb_appart;
+        if (activeFilter === "residentiel") return s.nb;
+        if (activeFilter === "maison") return s.nb_maison;
+        if (activeFilter === "appart") return s.nb_appart;
         return s.nb_terrain;
       }
 
@@ -425,16 +551,36 @@
         return `hsl(${Math.round(120 * (1 - t))}, 80%, 45%)`;
       }
 
+      function loyerField() {
+        if (activeFilter === "maison") return "loyer_maison";
+        if (activeFilter === "appart") return "loyer_appart";
+        return "loyer_residentiel";
+      }
+
+      function getLoyer(c) {
+        const s = getStats(c);
+        if (!s) return null;
+        return s[loyerField()] ?? null;
+      }
+
+      function loyerToColor(loyer) {
+        const key = `${activeYear}_${activeFilter === "terrain" ? "residentiel" : activeFilter}`;
+        const { p3, p97 } = loyerScales[key];
+        const t = Math.max(0, Math.min(1, (loyer - p3) / (p97 - p3)));
+        return `hsl(${Math.round(120 * (1 - t))}, 80%, 45%)`;
+      }
+
       function getEvolution(c) {
         const field = priceField();
         const base = c.years?.[baseYear]?.[field];
         const latest = c.years?.[endYear]?.[field];
         if (!base || !latest) return null;
-        return (latest - base) / base * 100;
+        return ((latest - base) / base) * 100;
       }
 
       function evolutionToColor(pct) {
-        const { p3, p97 } = evolutionScales[`${baseYear}_${endYear}_${activeFilter}`];
+        const { p3, p97 } =
+          evolutionScales[`${baseYear}_${endYear}_${activeFilter}`];
         const range = Math.max(Math.abs(p3), Math.abs(p97));
         const t = Math.max(0, Math.min(1, (pct + range) / (2 * range)));
         return `hsl(${Math.round(120 * (1 - t))}, 80%, 45%)`;
@@ -453,45 +599,60 @@
         geojson.features.forEach((f) => {
           const code = String(f.properties.code);
           const c = communeIndex[code];
-          f.properties.nomCommune = c?.nom_commune ?? f.properties.nom ?? '';
-          f.properties.codeDep = c?.code_dep ?? '';
+          f.properties.nomCommune = c?.nom_commune ?? f.properties.nom ?? "";
+          f.properties.codeDep = c?.code_dep ?? "";
 
-          if (activeMode === 'prix') {
+          if (activeMode === "prix") {
             const price = c ? getPrice(c) : null;
-            f.properties.fillColor = price != null ? priceToColor(price) : '';
+            f.properties.fillColor = price != null ? priceToColor(price) : "";
             f.properties.price = price != null ? price : -1;
             f.properties.nb = (c ? getNb(c) : null) ?? 0;
             f.properties.evol = -999;
-          } else {
+            f.properties.loyer = -1;
+            f.properties.nbLoyer = 0;
+          } else if (activeMode === "evolution") {
             const evol = c ? getEvolution(c) : null;
-            f.properties.fillColor = evol != null ? evolutionToColor(evol) : '';
+            f.properties.fillColor = evol != null ? evolutionToColor(evol) : "";
             f.properties.evol = evol != null ? evol : -999;
             const field = priceField();
             f.properties.priceBase = c?.years?.[baseYear]?.[field] ?? -1;
             f.properties.priceLatest = c?.years?.[endYear]?.[field] ?? -1;
             f.properties.price = -1;
             f.properties.nb = 0;
+            f.properties.loyer = -1;
+            f.properties.nbLoyer = 0;
+          } else {
+            // mode loyer
+            const loyer = c ? getLoyer(c) : null;
+            f.properties.fillColor = loyer != null ? loyerToColor(loyer) : "";
+            f.properties.loyer = loyer != null ? loyer : -1;
+            const nbField = loyerField().replace("loyer_", "nb_loyer_");
+            f.properties.nbLoyer =
+              loyer != null ? (getStats(c)?.[nbField] ?? 0) : 0;
+            f.properties.price = -1;
+            f.properties.nb = 0;
+            f.properties.evol = -999;
           }
         });
         return geojson;
       }
 
       function getFirstLabelLayerId() {
-        return map.getStyle().layers.find(l => l.type === 'symbol')?.id;
+        return map.getStyle().layers.find((l) => l.type === "symbol")?.id;
       }
 
       function redrawCommunes() {
-        if (!map.getSource('communes')) return;
+        if (!map.getSource("communes")) return;
         enrichGeoJSON(geojsonCache);
-        map.getSource('communes').setData(geojsonCache);
+        map.getSource("communes").setData(geojsonCache);
       }
 
       // Légende dynamique
-      const legendDiv = document.getElementById('legend');
+      const legendDiv = document.getElementById("legend");
       function updateLegend() {
-        if (activeMode === 'prix') {
+        if (activeMode === "prix") {
           const { p3, p97 } = scales[`${activeYear}_${activeFilter}`];
-          const titre = 'Prix médian au m²';
+          const titre = "Prix médian au m²";
           legendDiv.innerHTML =
             `<b>${titre}</b>` +
             '<div class="legend-gradient"></div>' +
@@ -500,66 +661,84 @@
             `<span>${Math.round((p3 + p97) / 2).toLocaleString("fr-FR")} €</span>` +
             `<span>${Math.round(p97).toLocaleString("fr-FR")} €</span>` +
             "</div>";
-        } else {
-          const { p3, p97 } = evolutionScales[`${baseYear}_${endYear}_${activeFilter}`];
+        } else if (activeMode === "evolution") {
+          const { p3, p97 } =
+            evolutionScales[`${baseYear}_${endYear}_${activeFilter}`];
           const range = Math.max(Math.abs(p3), Math.abs(p97));
           legendDiv.innerHTML =
             `<b>Évolution ${baseYear} ${ARROW_DARK} ${endYear}</b>` +
             '<div class="legend-gradient legend-gradient-evol"></div>' +
             '<div class="legend-labels">' +
             `<span>${(-range).toFixed(0)}%</span><span>0%</span><span>+${range.toFixed(0)}%</span>` +
-            '</div>';
+            "</div>";
+        } else {
+          const loyerKey = `${activeYear}_${activeFilter === "terrain" ? "residentiel" : activeFilter}`;
+          const { p3, p97 } = loyerScales[loyerKey];
+          legendDiv.innerHTML =
+            `<b>Loyer au m² / mois</b>` +
+            '<div class="legend-gradient"></div>' +
+            '<div class="legend-labels">' +
+            `<span>${p3.toFixed(1)} €</span>` +
+            `<span>${((p3 + p97) / 2).toFixed(1)} €</span>` +
+            `<span>${p97.toFixed(1)} €</span>` +
+            "</div>";
         }
       }
       updateLegend();
 
       // Encart filtre
-      const filterDiv = document.getElementById('filter-control');
+      const filterDiv = document.getElementById("filter-control");
 
       // Flèche SVG réutilisable
-      const ARR = (color = '#cbd5e1') =>
+      const ARR = (color = "#cbd5e1") =>
         `<svg width="14" height="8" viewBox="0 0 14 8" fill="none" style="vertical-align:middle;margin:0 2px"><path d="M1 4h12M9 1l4 3-4 3" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-      const ARROW = ARR();                 // gris clair (panel)
-      const ARROW_DARK = ARR('#475569');   // slate-600 (tooltip, légende)
+      const ARROW = ARR(); // gris clair (panel)
+      const ARROW_DARK = ARR("#475569"); // slate-600 (tooltip, légende)
 
       function seg(name, options, active, wrap = false) {
-        return `<div class="seg-group${wrap ? ' seg-group--wrap' : ''}">` +
-          options.map(([val, label]) =>
-            `<input type="radio" name="${name}" id="seg-${name}-${val}" value="${val}"${active === val ? ' checked' : ''}>` +
-            `<label for="seg-${name}-${val}">${label}</label>`
-          ).join('') +
-          '</div>';
+        return (
+          `<div class="seg-group${wrap ? " seg-group--wrap" : ""}">` +
+          options
+            .map(
+              ([val, label]) =>
+                `<input type="radio" name="${name}" id="seg-${name}-${val}" value="${val}"${active === val ? " checked" : ""}>` +
+                `<label for="seg-${name}-${val}">${label}</label>`,
+            )
+            .join("") +
+          "</div>"
+        );
       }
 
       function updateSliderFill() {
         const n = YEARS.length - 1;
         const startIdx = YEARS.map(String).indexOf(baseYear);
-        const endIdx   = YEARS.map(String).indexOf(endYear);
-        const fill = document.getElementById('sl-fill');
+        const endIdx = YEARS.map(String).indexOf(endYear);
+        const fill = document.getElementById("sl-fill");
         if (fill) {
-          fill.style.left  = (startIdx / n * 100) + '%';
-          fill.style.width = ((endIdx - startIdx) / n * 100) + '%';
+          fill.style.left = (startIdx / n) * 100 + "%";
+          fill.style.width = ((endIdx - startIdx) / n) * 100 + "%";
         }
-        const elBase = document.getElementById('sl-base');
-        const elEnd  = document.getElementById('sl-end');
+        const elBase = document.getElementById("sl-base");
+        const elEnd = document.getElementById("sl-end");
         if (elBase) elBase.textContent = baseYear;
-        if (elEnd)  elEnd.textContent  = endYear;
+        if (elEnd) elEnd.textContent = endYear;
       }
 
       function renderFilterPanel() {
         const n = YEARS.length - 1;
         const baseIdx = YEARS.map(String).indexOf(baseYear);
-        const endIdx  = YEARS.map(String).indexOf(endYear);
+        const endIdx = YEARS.map(String).indexOf(endYear);
 
-        const yearSection = activeMode === 'prix'
-          ? `<div class="filter-section">
+        const yearSection =
+          activeMode === "prix" || activeMode === "loyer"
+            ? `<div class="filter-section">
               <div class="filter-label-row"><span class="filter-label">Année</span></div>
               <select name="year" class="filter-select">
-                <option value="all"${activeYear === 'all' ? ' selected' : ''}>Toutes les années</option>
-                ${YEARS.map(y => `<option value="${y}"${String(y) === activeYear ? ' selected' : ''}>${y}</option>`).join('')}
+                <option value="all"${activeYear === "all" ? " selected" : ""}>Toutes les années</option>
+                ${YEARS.map((y) => `<option value="${y}"${String(y) === activeYear ? " selected" : ""}>${y}</option>`).join("")}
               </select>
             </div>`
-          : `<div class="filter-section">
+            : `<div class="filter-section">
               <div class="year-slider-header">
                 <span class="filter-label">Période</span>
                 <span class="year-slider-values">
@@ -571,7 +750,7 @@
               <div class="year-slider-wrap">
                 <div class="year-slider-bg">
                   <div class="year-slider-fill" id="sl-fill"
-                    style="left:${baseIdx/n*100}%;width:${(endIdx-baseIdx)/n*100}%"></div>
+                    style="left:${(baseIdx / n) * 100}%;width:${((endIdx - baseIdx) / n) * 100}%"></div>
                 </div>
                 <input type="range" class="year-slider" name="baseYearIdx"
                   min="0" max="${n}" step="1" value="${baseIdx}">
@@ -579,23 +758,52 @@
                   min="0" max="${n}" step="1" value="${endIdx}">
               </div>
               <div class="year-slider-ticks">
-                ${YEARS.map(y => `<span>${y}</span>`).join('')}
+                ${YEARS.map((y) => `<span>${y}</span>`).join("")}
               </div>
             </div>`;
 
-        filterDiv.innerHTML =
-          `<div class="filter-section">
+        const filterOptions =
+          activeMode === "loyer"
+            ? [
+                [
+                  "residentiel",
+                  'Résidentiel<i class="info-icon" data-tip="Regroupe les maisons et les appartements">i</i>',
+                ],
+                ["maison", "Maison"],
+                ["appart", "Appart"],
+              ]
+            : [
+                [
+                  "residentiel",
+                  'Résidentiel<i class="info-icon" data-tip="Regroupe les maisons et les appartements">i</i>',
+                ],
+                ["maison", "Maison"],
+                ["appart", "Appart"],
+                ["terrain", "Terrain"],
+              ];
+
+        filterDiv.innerHTML = `<div class="filter-section">
             <div class="filter-label-row"><span class="filter-label">Affichage</span></div>
-            ${seg('mode', [['prix', 'Prix médian'], ['evolution', 'Évolution']], activeMode)}
+            ${seg(
+              "mode",
+              [
+                [
+                  "prix",
+                  'Prix au m²<i class="info-icon" data-tip="Prix médian au m² des transactions DVF">i</i>',
+                ],
+                ["evolution", "Évolution"],
+                [
+                  "loyer",
+                  'Loyer /m²<i class="info-icon" data-tip="Loyer mensuel au m² (prédit par un modèle économétrique), charges comprises, pour des biens non meublés — source MEF/DHUP">i</i>',
+                ],
+              ],
+              activeMode,
+              true,
+            )}
           </div>
           <div class="filter-section">
             <div class="filter-label-row"><span class="filter-label">Type de bien</span></div>
-            ${seg('filter', [
-              ['residentiel', 'Résidentiel<i class="info-icon" data-tip="Regroupe les maisons et les appartements">i</i>'],
-              ['maison', 'Maison'],
-              ['appart', 'Appart'],
-              ['terrain', 'Terrain'],
-            ], activeFilter, true)}
+            ${seg("filter", filterOptions, activeFilter, true)}
           </div>
           <hr class="filter-divider">
           ${yearSection}`;
@@ -604,7 +812,13 @@
       renderFilterPanel();
 
       filterDiv.addEventListener("change", (e) => {
-        if (e.target.name === "mode") { activeMode = e.target.value; renderFilterPanel(); }
+        if (e.target.name === "mode") {
+          activeMode = e.target.value;
+          if (activeMode === "loyer" && activeFilter === "terrain") {
+            activeFilter = "residentiel";
+          }
+          renderFilterPanel();
+        }
         if (e.target.name === "filter") activeFilter = e.target.value;
         if (e.target.name === "year") activeYear = e.target.value;
         popup.remove();
@@ -616,7 +830,10 @@
         if (e.target.name === "baseYearIdx") {
           const idx = parseInt(e.target.value);
           const endIdx = YEARS.map(String).indexOf(endYear);
-          if (idx >= endIdx) { e.target.value = endIdx - 1; return; }
+          if (idx >= endIdx) {
+            e.target.value = endIdx - 1;
+            return;
+          }
           baseYear = String(YEARS[idx]);
           updateSliderFill();
           redrawCommunes();
@@ -625,7 +842,10 @@
         if (e.target.name === "endYearIdx") {
           const idx = parseInt(e.target.value);
           const baseIdx = YEARS.map(String).indexOf(baseYear);
-          if (idx <= baseIdx) { e.target.value = baseIdx + 1; return; }
+          if (idx <= baseIdx) {
+            e.target.value = baseIdx + 1;
+            return;
+          }
           endYear = String(YEARS[idx]);
           updateSliderFill();
           redrawCommunes();
@@ -634,32 +854,45 @@
       });
 
       // ── Recherche de commune ──────────────────────
-      const searchInput   = document.getElementById('search-input');
-      const searchClear   = document.getElementById('search-clear');
-      const resultsList   = document.getElementById('search-results');
-      const MAX_RESULTS   = 8;
+      const searchInput = document.getElementById("search-input");
+      const searchClear = document.getElementById("search-clear");
+      const resultsList = document.getElementById("search-results");
+      const MAX_RESULTS = 8;
 
       function normalize(s) {
-        return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        return s
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase();
       }
 
       function renderResults(matches) {
-        if (!matches.length) { resultsList.hidden = true; return; }
-        resultsList.innerHTML = matches.map(c =>
-          `<li data-lon="${c.lon}" data-lat="${c.lat}" data-name="${c.nom_commune}">
+        if (!matches.length) {
+          resultsList.hidden = true;
+          return;
+        }
+        resultsList.innerHTML = matches
+          .map(
+            (c) =>
+              `<li data-lon="${c.lon}" data-lat="${c.lat}" data-name="${c.nom_commune}">
             <span>${c.nom_commune}</span>
             <span class="dep">${c.code_dep}</span>
-          </li>`
-        ).join('');
+          </li>`,
+          )
+          .join("");
         resultsList.hidden = false;
       }
 
-      searchInput.addEventListener('input', () => {
+      searchInput.addEventListener("input", () => {
         const q = normalize(searchInput.value.trim());
         searchClear.hidden = !q;
-        if (!q) { resultsList.hidden = true; return; }
-        const matches = COMMUNES
-          .filter(c => normalize(c.nom_commune).includes(q))
+        if (!q) {
+          resultsList.hidden = true;
+          return;
+        }
+        const matches = COMMUNES.filter((c) =>
+          normalize(c.nom_commune).includes(q),
+        )
           .sort((a, b) => {
             const aStarts = normalize(a.nom_commune).startsWith(q);
             const bStarts = normalize(b.nom_commune).startsWith(q);
@@ -670,29 +903,37 @@
         renderResults(matches);
       });
 
-      resultsList.addEventListener('click', e => {
-        const li = e.target.closest('li');
+      resultsList.addEventListener("click", (e) => {
+        const li = e.target.closest("li");
         if (!li) return;
-        map.flyTo({ center: [+li.dataset.lon, +li.dataset.lat], zoom: 12, duration: 800 });
+        map.flyTo({
+          center: [+li.dataset.lon, +li.dataset.lat],
+          zoom: 12,
+          duration: 800,
+        });
         searchInput.value = li.dataset.name;
         resultsList.hidden = true;
         searchClear.hidden = false;
       });
 
-      searchClear.addEventListener('click', () => {
-        searchInput.value = '';
+      searchClear.addEventListener("click", () => {
+        searchInput.value = "";
         resultsList.hidden = true;
         searchClear.hidden = true;
       });
 
-      document.addEventListener('click', e => {
-        if (!e.target.closest('#search-control')) resultsList.hidden = true;
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest("#search-control")) resultsList.hidden = true;
       });
 
       // Popup réutilisée
-      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 });
+      const popup = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        offset: 10,
+      });
 
-      map.on('load', () => {
+      map.on("load", () => {
         fetch(
           "https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/communes-version-simplifiee.geojson",
         )
@@ -701,47 +942,61 @@
             geojsonCache = enrichGeoJSON(geojson);
             const labelLayerId = getFirstLabelLayerId();
 
-            map.addSource('communes', { type: 'geojson', data: geojsonCache });
+            map.addSource("communes", { type: "geojson", data: geojsonCache });
 
-            map.addLayer({
-              id: 'communes-fill',
-              type: 'fill',
-              source: 'communes',
-              paint: {
-                'fill-color': ['case', ['!=', ['get', 'fillColor'], ''], ['get', 'fillColor'], 'rgba(0,0,0,0)'],
-                'fill-opacity': 0.45,
+            map.addLayer(
+              {
+                id: "communes-fill",
+                type: "fill",
+                source: "communes",
+                paint: {
+                  "fill-color": [
+                    "case",
+                    ["!=", ["get", "fillColor"], ""],
+                    ["get", "fillColor"],
+                    "rgba(0,0,0,0)",
+                  ],
+                  "fill-opacity": 0.45,
+                },
               },
-            }, labelLayerId);
+              labelLayerId,
+            );
 
-            map.addLayer({
-              id: 'communes-line',
-              type: 'line',
-              source: 'communes',
-              paint: {
-                'line-color': '#888',
-                'line-width': 0.3,
-                'line-opacity': 0.15,
+            map.addLayer(
+              {
+                id: "communes-line",
+                type: "line",
+                source: "communes",
+                paint: {
+                  "line-color": "#888",
+                  "line-width": 0.3,
+                  "line-opacity": 0.15,
+                },
               },
-            }, labelLayerId);
+              labelLayerId,
+            );
 
-            map.on('mousemove', 'communes-fill', (e) => {
+            map.on("mousemove", "communes-fill", (e) => {
               const p = e.features[0].properties;
               if (!p.nomCommune) return;
-              map.getCanvas().style.cursor = 'pointer';
-              const html = activeMode === 'evolution' && p.evol > -999
-                ? `<b>${p.nomCommune}</b> (${p.codeDep})<br>`
-                  + `${p.evol >= 0 ? '+' : ''}${Number(p.evol).toFixed(1)}%`
-                  + ` (${baseYear} ${ARROW_DARK} ${endYear})<br>`
-                  + `<small>${Number(p.priceBase).toLocaleString('fr-FR')} ${ARROW_DARK} `
-                  + `${Number(p.priceLatest).toLocaleString('fr-FR')} €/m²</small>`
-                : activeMode === 'prix' && p.price >= 0
-                ? `<b>${p.nomCommune}</b> (${p.codeDep})<br>${Number(p.price).toLocaleString('fr-FR')} €/m²<br><small>${p.nb} ventes</small>`
-                : `<b>${p.nomCommune}</b><br><small style="color:#999">Aucune donnée</small>`;
+              map.getCanvas().style.cursor = "pointer";
+              const html =
+                activeMode === "evolution" && p.evol > -999
+                  ? `<b>${p.nomCommune}</b> (${p.codeDep})<br>` +
+                    `${p.evol >= 0 ? "+" : ""}${Number(p.evol).toFixed(1)}%` +
+                    ` (${baseYear} ${ARROW_DARK} ${endYear})<br>` +
+                    `<small>${Number(p.priceBase).toLocaleString("fr-FR")} ${ARROW_DARK} ` +
+                    `${Number(p.priceLatest).toLocaleString("fr-FR")} €/m²</small>`
+                  : activeMode === "loyer" && p.loyer >= 0
+                    ? `<b>${p.nomCommune}</b> (${p.codeDep})<br>${Number(p.loyer).toFixed(1)} €/m²/mois<br><small>${p.nbLoyer} annonces</small>`
+                    : activeMode === "prix" && p.price >= 0
+                      ? `<b>${p.nomCommune}</b> (${p.codeDep})<br>${Number(p.price).toLocaleString("fr-FR")} €/m²<br><small>${p.nb} ventes</small>`
+                      : `<b>${p.nomCommune}</b><br><small style="color:#999">Aucune donnée</small>`;
               popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
             });
 
-            map.on('mouseleave', 'communes-fill', () => {
-              map.getCanvas().style.cursor = '';
+            map.on("mouseleave", "communes-fill", () => {
+              map.getCanvas().style.cursor = "";
               popup.remove();
             });
           });

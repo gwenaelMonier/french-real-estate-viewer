@@ -1,5 +1,14 @@
 # Changelog — French real estate viewer
 
+## 1.7.0 — Rental price data
+
+- **MEF/DHUP rental price integration** (apartments, houses, residential)
+- Added fields: `loyer_appart`, `loyer_maison`, `loyer_residentiel` (€/m²/month)
+- Weighted residential rent computed from property counts
+- 2022–2025 CSV files imported in `process.py`
+
+---
+
 ## 1.6.0 — Land plot filter
 
 - Added **Land** property type to filters

@@ -1,6 +1,68 @@
-import duckdb, json
+import duckdb, json, csv as csv_mod
 
 CSV = 'data/full_dvf.csv'  # chemin vers le fichier 3.5 Go
+
+# ── Chargement des données loyer MEF/DHUP ────────────────────────────────────
+loyer_data = {}  # dict[code_commune][annee][field]
+
+for typ in ('app', 'mai'):
+    for annee in (2022, 2023, 2024, 2025):
+        path = f'data/loyer-pred-{typ}-mef-dhup-{annee}.csv'
+        with open(path, encoding='latin-1') as f:
+            reader = csv_mod.DictReader(f, delimiter=';')
+            for row in reader:
+                code = row['INSEE_C'].strip().strip('"')
+                val = float(row['loypredm2'].replace(',', '.'))
+                if code not in loyer_data:
+                    loyer_data[code] = {}
+                if annee not in loyer_data[code]:
+                    loyer_data[code][annee] = {}
+                field = 'loyer_appart' if typ == 'app' else 'loyer_maison'
+                loyer_data[code][annee][field] = round(val, 2)
+                nb_field = 'nb_loyer_appart' if typ == 'app' else 'nb_loyer_maison'
+                loyer_data[code][annee][nb_field] = int(row['nbobs_com'] or 0)
+
+# Calculer loyer_residentiel (moyenne pondérée) et dupliquer 2022 → 2020, 2021
+for code, by_year in loyer_data.items():
+    for annee in list(by_year.keys()):
+        d = by_year[annee]
+        pairs = [(d[f], d[nf]) for f, nf in
+                 [('loyer_appart', 'nb_loyer_appart'), ('loyer_maison', 'nb_loyer_maison')]
+                 if d.get(f) is not None and d.get(nf)]
+        if pairs:
+            total_w = sum(nb for _, nb in pairs)
+            d['loyer_residentiel'] = round(sum(v * nb for v, nb in pairs) / total_w, 2) if total_w else None
+        else:
+            d['loyer_residentiel'] = None
+        d['nb_loyer_residentiel'] = (d.get('nb_loyer_appart') or 0) + (d.get('nb_loyer_maison') or 0)
+    for yr_fill in (2020, 2021):
+        if yr_fill not in by_year and 2022 in by_year:
+            by_year[yr_fill] = by_year[2022].copy()
+
+# Calcul des valeurs globales loyer (moyenne pondérée sur 2022-2025)
+loyer_global = {}
+for code, by_year in loyer_data.items():
+    agg = {}
+    for field, nb_field in [
+        ('loyer_appart',      'nb_loyer_appart'),
+        ('loyer_maison',      'nb_loyer_maison'),
+        ('loyer_residentiel', 'nb_loyer_residentiel'),
+    ]:
+        pairs = [(by_year[yr][field], by_year[yr].get(nb_field, 0))
+                 for yr in (2022, 2023, 2024, 2025)
+                 if yr in by_year and by_year[yr].get(field) is not None]
+        if pairs:
+            total_w = sum(nb for _, nb in pairs) or len(pairs)
+            agg[field] = round(sum(v * nb for v, nb in pairs) / total_w, 2)
+        else:
+            agg[field] = None
+    for nb_field in ('nb_loyer_appart', 'nb_loyer_maison', 'nb_loyer_residentiel'):
+        vals = [by_year[yr][nb_field] for yr in (2022, 2023, 2024, 2025)
+                if yr in by_year and by_year[yr].get(nb_field) is not None]
+        agg[nb_field] = round(sum(vals) / len(vals)) if vals else None
+    loyer_global[code] = agg
+
+print(f"Loyer data chargé : {len(loyer_data)} communes")
 
 con = duckdb.connect()
 con.execute("SET memory_limit='2GB'")
@@ -190,6 +252,25 @@ with open('communes.js', 'w', encoding='utf-8') as f:
                 years_data[yr].update(stats)
             else:
                 years_data[yr] = stats
+
+        # Injection des données loyer
+        code = commune['code_commune']
+        lg = loyer_global.get(code, {})
+        commune['loyer_residentiel']    = lg.get('loyer_residentiel')
+        commune['loyer_maison']         = lg.get('loyer_maison')
+        commune['loyer_appart']         = lg.get('loyer_appart')
+        commune['nb_loyer_residentiel'] = lg.get('nb_loyer_residentiel')
+        commune['nb_loyer_maison']      = lg.get('nb_loyer_maison')
+        commune['nb_loyer_appart']      = lg.get('nb_loyer_appart')
+
+        ly = loyer_data.get(code, {})
+        for yr_int, fields in ly.items():
+            yr_str = str(yr_int)
+            if yr_str in years_data:
+                years_data[yr_str].update(fields)
+            else:
+                years_data[yr_str] = fields.copy()
+
         all_years.update(years_data.keys())
         commune['years'] = years_data
         json.dump(commune, f, ensure_ascii=False, separators=(',', ':'))

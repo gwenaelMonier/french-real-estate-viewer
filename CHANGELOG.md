@@ -1,5 +1,13 @@
 # Changelog — French real estate viewer
 
+## 1.6.0 — Land plot filter
+
+- Added **Land** property type to filters
+- `process.py`: new `raw_terrain` CTE to isolate building land transactions
+- Added fields: `med_m2_terrain`, `nb_terrain` (aggregate and per year)
+
+---
+
 ## 1.5.1 — DuckDB pipeline optimization
 
 - Refactored SQL queries in `process.py` for better performance

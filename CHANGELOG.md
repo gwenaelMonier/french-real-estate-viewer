@@ -1,5 +1,14 @@
 # Changelog — French real estate viewer
 
+## 1.4.0 — Municipality search
+
+- **Municipality search field** with results filtered on keypress
+- Results display name and department code
+- Clear/reset button
+- Clicking a result automatically zooms to the municipality
+
+---
+
 ## 1.3.0 — Year range slider
 
 - **Dual-handle year slider** for the evolution mode

@@ -215,6 +215,34 @@
         padding: 0 1px;
       }
 
+      /* ── Search control ──────────────────────────── */
+      #search-control { position:absolute; top:10px; left:10px; z-index:2; width:300px; }
+      .search-wrap { position:relative; }
+      #search-input {
+        width:100%; padding:10px 36px 10px 14px;
+        font-family:'Plus Jakarta Sans',sans-serif; font-size:13px;
+        border:none; border-radius:10px;
+        box-shadow:0 4px 20px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+        background:white; color:#1e293b;
+      }
+      #search-input:focus { outline:none; box-shadow:0 4px 20px rgba(0,0,0,0.15); }
+      #search-clear {
+        position:absolute; right:10px; top:50%; transform:translateY(-50%);
+        background:none; border:none; cursor:pointer; color:#94a3b8; font-size:13px;
+      }
+      #search-results {
+        list-style:none; background:white; border-radius:10px; margin-top:6px;
+        box-shadow:0 4px 20px rgba(0,0,0,0.10); overflow:hidden;
+        max-height:260px; overflow-y:auto;
+      }
+      #search-results li {
+        padding:9px 14px; cursor:pointer; font-size:13px;
+        font-family:'Plus Jakarta Sans',sans-serif; color:#1e293b;
+        display:flex; justify-content:space-between; align-items:center;
+      }
+      #search-results li:hover { background:#f1f5f9; }
+      #search-results li .dep { font-size:11px; color:#94a3b8; }
+
       /* Popup */
       .maplibregl-popup-content {
         font-family: 'Plus Jakarta Sans', sans-serif;
@@ -229,7 +257,16 @@
     <div id="map"></div>
 
     <div id="legend" class="legend" style="position:absolute;bottom:36px;left:10px;z-index:1;"></div>
-    <div id="filter-control" class="filter-control" style="position:absolute;top:10px;left:10px;z-index:1;"></div>
+
+    <div id="search-control">
+      <div class="search-wrap">
+        <input id="search-input" type="text" placeholder="Rechercher une commune…" autocomplete="off">
+        <button id="search-clear" hidden>✕</button>
+      </div>
+      <ul id="search-results" hidden></ul>
+    </div>
+
+    <div id="filter-control" class="filter-control" style="position:absolute;top:76px;left:10px;z-index:1;"></div>
 
     <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
     <script src="communes.js"></script>
@@ -537,6 +574,62 @@
           redrawCommunes();
           updateLegend();
         }
+      });
+
+      // ── Recherche de commune ──────────────────────
+      const searchInput   = document.getElementById('search-input');
+      const searchClear   = document.getElementById('search-clear');
+      const resultsList   = document.getElementById('search-results');
+      const MAX_RESULTS   = 8;
+
+      function normalize(s) {
+        return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      }
+
+      function renderResults(matches) {
+        if (!matches.length) { resultsList.hidden = true; return; }
+        resultsList.innerHTML = matches.map(c =>
+          `<li data-lon="${c.lon}" data-lat="${c.lat}" data-name="${c.nom_commune}">
+            <span>${c.nom_commune}</span>
+            <span class="dep">${c.code_dep}</span>
+          </li>`
+        ).join('');
+        resultsList.hidden = false;
+      }
+
+      searchInput.addEventListener('input', () => {
+        const q = normalize(searchInput.value.trim());
+        searchClear.hidden = !q;
+        if (!q) { resultsList.hidden = true; return; }
+        const matches = COMMUNES
+          .filter(c => normalize(c.nom_commune).includes(q))
+          .sort((a, b) => {
+            const aStarts = normalize(a.nom_commune).startsWith(q);
+            const bStarts = normalize(b.nom_commune).startsWith(q);
+            if (aStarts !== bStarts) return aStarts ? -1 : 1;
+            return a.nom_commune.localeCompare(b.nom_commune);
+          })
+          .slice(0, MAX_RESULTS);
+        renderResults(matches);
+      });
+
+      resultsList.addEventListener('click', e => {
+        const li = e.target.closest('li');
+        if (!li) return;
+        map.flyTo({ center: [+li.dataset.lon, +li.dataset.lat], zoom: 12, duration: 800 });
+        searchInput.value = li.dataset.name;
+        resultsList.hidden = true;
+        searchClear.hidden = false;
+      });
+
+      searchClear.addEventListener('click', () => {
+        searchInput.value = '';
+        resultsList.hidden = true;
+        searchClear.hidden = true;
+      });
+
+      document.addEventListener('click', e => {
+        if (!e.target.closest('#search-control')) resultsList.hidden = true;
       });
 
       // Popup réutilisée

@@ -3,8 +3,7 @@ from collections import defaultdict
 
 CSV = 'data/full_dvf.csv'  # chemin vers le fichier 3.5 Go
 
-STAT_COLS = ['avg_m2', 'avg_m2_maison', 'avg_m2_appart',
-            'med_m2', 'med_m2_maison', 'med_m2_appart',
+STAT_COLS = ['med_m2', 'med_m2_maison', 'med_m2_appart',
             'nb', 'nb_maison', 'nb_appart']
 
 DEDUP_CTE = """
@@ -51,9 +50,6 @@ global_rows = duckdb.execute(f"""
         code_commune,
         nom_commune,
         code_departement AS code_dep,
-        ROUND(AVG(prix_m2)) AS avg_m2,
-        ROUND(AVG(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS avg_m2_maison,
-        ROUND(AVG(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS avg_m2_appart,
         ROUND(MEDIAN(prix_m2)) AS med_m2,
         ROUND(MEDIAN(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS med_m2_maison,
         ROUND(MEDIAN(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS med_m2_appart,
@@ -69,7 +65,6 @@ global_rows = duckdb.execute(f"""
 """).fetchall()
 
 global_cols = ['code_commune', 'nom_commune', 'code_dep',
-               'avg_m2', 'avg_m2_maison', 'avg_m2_appart',
                'med_m2', 'med_m2_maison', 'med_m2_appart',
                'nb', 'nb_maison', 'nb_appart', 'lat', 'lon']
 communes = {r[0]: dict(zip(global_cols, r)) for r in global_rows}
@@ -108,9 +103,6 @@ year_rows = duckdb.execute(f"""
     SELECT
         code_commune,
         annee,
-        ROUND(AVG(prix_m2)) AS avg_m2,
-        ROUND(AVG(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS avg_m2_maison,
-        ROUND(AVG(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS avg_m2_appart,
         ROUND(MEDIAN(prix_m2)) AS med_m2,
         ROUND(MEDIAN(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS med_m2_maison,
         ROUND(MEDIAN(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS med_m2_appart,
@@ -124,7 +116,6 @@ year_rows = duckdb.execute(f"""
 """).fetchall()
 
 year_cols = ['code_commune', 'annee',
-             'avg_m2', 'avg_m2_maison', 'avg_m2_appart',
              'med_m2', 'med_m2_maison', 'med_m2_appart',
              'nb', 'nb_maison', 'nb_appart']
 

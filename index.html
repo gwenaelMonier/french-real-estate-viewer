@@ -282,58 +282,51 @@
       let activeFilter = "all"; // 'all' | 'maison' | 'appart'
       let activeYear = "all";   // 'all' | '2019' | '2020' | ...
       let activeMode = 'prix';  // 'prix' | 'evolution'
-      let activeCalc = 'moyenne'; // 'moyenne' | 'mediane'
       const LATEST_YEAR = String(Math.max(...YEARS));
       let baseYear = String(YEARS[0]);
       let endYear = LATEST_YEAR;
 
-      // Pré-calcul des échelles P3/P97 pour chaque combinaison calc × année × type
+      // Pré-calcul des échelles P3/P97 pour chaque combinaison année × type
       const scales = {};
-      for (const calc of ['moyenne', 'mediane']) {
-        for (const year of ["all", ...YEARS.map(String)]) {
-          for (const [filterKey, avgField, medField] of [
-            ["all", "avg_m2", "med_m2"],
-            ["maison", "avg_m2_maison", "med_m2_maison"],
-            ["appart", "avg_m2_appart", "med_m2_appart"],
-          ]) {
-            const field = calc === 'mediane' ? medField : avgField;
-            const vals = COMMUNES.map((c) => {
-              const s = year === "all" ? c : c.years?.[year];
-              return s ? s[field] : null;
-            })
-              .filter((v) => v != null)
-              .sort((a, b) => a - b);
-            scales[`${year}_${filterKey}_${calc}`] = {
-              p3: vals[Math.floor(vals.length * 0.03)],
-              p97: vals[Math.floor(vals.length * 0.97)],
-            };
-          }
+      for (const year of ["all", ...YEARS.map(String)]) {
+        for (const [filterKey, medField] of [
+          ["all", "med_m2"],
+          ["maison", "med_m2_maison"],
+          ["appart", "med_m2_appart"],
+        ]) {
+          const vals = COMMUNES.map((c) => {
+            const s = year === "all" ? c : c.years?.[year];
+            return s ? s[medField] : null;
+          })
+            .filter((v) => v != null)
+            .sort((a, b) => a - b);
+          scales[`${year}_${filterKey}`] = {
+            p3: vals[Math.floor(vals.length * 0.03)],
+            p97: vals[Math.floor(vals.length * 0.97)],
+          };
         }
       }
 
-      // Pré-calcul des échelles d'évolution (pour chaque calc × filtre × baseYear × endYear)
+      // Pré-calcul des échelles d'évolution (pour chaque filtre × baseYear × endYear)
       const evolutionScales = {};
-      for (const [filterKey, avgField, medField] of [
-        ['all', 'avg_m2', 'med_m2'],
-        ['maison', 'avg_m2_maison', 'med_m2_maison'],
-        ['appart', 'avg_m2_appart', 'med_m2_appart'],
+      for (const [filterKey, medField] of [
+        ['all', 'med_m2'],
+        ['maison', 'med_m2_maison'],
+        ['appart', 'med_m2_appart'],
       ]) {
-        for (const calc of ['moyenne', 'mediane']) {
-          const field = calc === 'mediane' ? medField : avgField;
-          for (const baseYr of YEARS.map(String)) {
-            for (const endYr of YEARS.map(String)) {
-              if (endYr <= baseYr) continue;
-              const evols = COMMUNES.map(c => {
-                const base = c.years?.[baseYr]?.[field];
-                const latest = c.years?.[endYr]?.[field];
-                if (!base || !latest) return null;
-                return (latest - base) / base * 100;
-              }).filter(v => v != null).sort((a, b) => a - b);
-              evolutionScales[`${baseYr}_${endYr}_${filterKey}_${calc}`] = {
-                p3: evols[Math.floor(evols.length * 0.03)],
-                p97: evols[Math.floor(evols.length * 0.97)],
-              };
-            }
+        for (const baseYr of YEARS.map(String)) {
+          for (const endYr of YEARS.map(String)) {
+            if (endYr <= baseYr) continue;
+            const evols = COMMUNES.map(c => {
+              const base = c.years?.[baseYr]?.[medField];
+              const latest = c.years?.[endYr]?.[medField];
+              if (!base || !latest) return null;
+              return (latest - base) / base * 100;
+            }).filter(v => v != null).sort((a, b) => a - b);
+            evolutionScales[`${baseYr}_${endYr}_${filterKey}`] = {
+              p3: evols[Math.floor(evols.length * 0.03)],
+              p97: evols[Math.floor(evols.length * 0.97)],
+            };
           }
         }
       }
@@ -343,10 +336,9 @@
         return c.years?.[activeYear] ?? null;
       }
       function priceField() {
-        const prefix = activeCalc === 'mediane' ? 'med' : 'avg';
-        if (activeFilter === 'all') return `${prefix}_m2`;
-        if (activeFilter === 'maison') return `${prefix}_m2_maison`;
-        return `${prefix}_m2_appart`;
+        if (activeFilter === 'all') return 'med_m2';
+        if (activeFilter === 'maison') return 'med_m2_maison';
+        return 'med_m2_appart';
       }
 
       function getPrice(c) {
@@ -363,7 +355,7 @@
       }
 
       function priceToColor(price) {
-        const { p3, p97 } = scales[`${activeYear}_${activeFilter}_${activeCalc}`];
+        const { p3, p97 } = scales[`${activeYear}_${activeFilter}`];
         const t = Math.max(0, Math.min(1, (price - p3) / (p97 - p3)));
         return `hsl(${Math.round(120 * (1 - t))}, 80%, 45%)`;
       }
@@ -377,7 +369,7 @@
       }
 
       function evolutionToColor(pct) {
-        const { p3, p97 } = evolutionScales[`${baseYear}_${endYear}_${activeFilter}_${activeCalc}`];
+        const { p3, p97 } = evolutionScales[`${baseYear}_${endYear}_${activeFilter}`];
         const range = Math.max(Math.abs(p3), Math.abs(p97));
         const t = Math.max(0, Math.min(1, (pct + range) / (2 * range)));
         return `hsl(${Math.round(120 * (1 - t))}, 80%, 45%)`;
@@ -433,8 +425,8 @@
       const legendDiv = document.getElementById('legend');
       function updateLegend() {
         if (activeMode === 'prix') {
-          const { p3, p97 } = scales[`${activeYear}_${activeFilter}_${activeCalc}`];
-          const titre = activeCalc === 'mediane' ? 'Prix médian au m²' : 'Prix moyen au m²';
+          const { p3, p97 } = scales[`${activeYear}_${activeFilter}`];
+          const titre = 'Prix médian au m²';
           legendDiv.innerHTML =
             `<b>${titre}</b>` +
             '<div class="legend-gradient"></div>' +
@@ -444,7 +436,7 @@
             `<span>${Math.round(p97).toLocaleString("fr-FR")} €</span>` +
             "</div>";
         } else {
-          const { p3, p97 } = evolutionScales[`${baseYear}_${endYear}_${activeFilter}_${activeCalc}`];
+          const { p3, p97 } = evolutionScales[`${baseYear}_${endYear}_${activeFilter}`];
           const range = Math.max(Math.abs(p3), Math.abs(p97));
           legendDiv.innerHTML =
             `<b>Évolution ${baseYear} ${ARROW_DARK} ${endYear}</b>` +
@@ -529,15 +521,11 @@
         filterDiv.innerHTML =
           `<div class="filter-section">
             <div class="filter-label-row"><span class="filter-label">Affichage</span></div>
-            ${seg('mode', [['prix', 'Prix moyen'], ['evolution', 'Évolution']], activeMode)}
+            ${seg('mode', [['prix', 'Prix médian'], ['evolution', 'Évolution']], activeMode)}
           </div>
           <div class="filter-section">
             <div class="filter-label-row"><span class="filter-label">Type de bien</span></div>
             ${seg('filter', [['all', 'Tous'], ['maison', 'Maison'], ['appart', 'Appart']], activeFilter)}
-          </div>
-          <div class="filter-section">
-            <div class="filter-label-row"><span class="filter-label">Calcul</span></div>
-            ${seg('calc', [['moyenne', 'Moyenne'], ['mediane', 'Médiane']], activeCalc)}
           </div>
           <hr class="filter-divider">
           ${yearSection}`;
@@ -546,7 +534,6 @@
       renderFilterPanel();
 
       filterDiv.addEventListener("change", (e) => {
-        if (e.target.name === "calc") activeCalc = e.target.value;
         if (e.target.name === "mode") { activeMode = e.target.value; renderFilterPanel(); }
         if (e.target.name === "filter") activeFilter = e.target.value;
         if (e.target.name === "year") activeYear = e.target.value;

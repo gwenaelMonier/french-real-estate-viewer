@@ -1,5 +1,12 @@
 # Changelog — French real estate viewer
 
+## 1.5.0 — Removed average prices
+
+- **Removed average prices**, keeping only medians
+- `STAT_COLS` reduced to `med_m2`, `med_m2_maison`, `med_m2_appart`
+
+---
+
 ## 1.4.0 — Municipality search
 
 - **Municipality search field** with results filtered on keypress

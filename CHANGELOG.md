@@ -1,5 +1,12 @@
 # Changelog — French real estate viewer
 
+## 1.9.0 — UI redesign
+
+- Redesigned control panel (layout, typography, spacing)
+- Improved visual design for filters and legend
+
+---
+
 ## 1.8.0 — Gross yields
 
 - **Gross yield calculation**: `(annual_rent / price_per_m²) × 100`

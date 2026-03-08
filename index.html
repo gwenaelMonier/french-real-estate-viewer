@@ -75,18 +75,19 @@
       /* ── Filter panel ────────────────────────────── */
       .filter-control {
         background: #ffffff;
-        padding: 20px 20px 18px;
+        padding: 6px 0 0;
         border-radius: 14px;
         box-shadow:
           0 4px 20px rgba(0, 0, 0, 0.1),
           0 1px 4px rgba(0, 0, 0, 0.06);
         font-family: "Plus Jakarta Sans", sans-serif;
         font-size: 14px;
-        width: 300px;
+        width: 310px;
         color: #1e293b;
+        overflow: hidden;
       }
       .filter-section {
-        margin-bottom: 15px;
+        margin-bottom: 0;
       }
       .filter-section:last-child {
         margin-bottom: 0;
@@ -98,7 +99,7 @@
         margin-bottom: 7px;
       }
       .filter-label {
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.07em;
@@ -112,16 +113,44 @@
       .filter-divider {
         border: none;
         border-top: 1px solid #f1f5f9;
-        margin: 16px 0;
+        margin: 0;
       }
 
-      /* Segmented controls */
+      /* ── Mode tabs (primary) ───────────────────── */
+      .mode-tabs {
+        display: flex;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .mode-tabs input[type="radio"] { display: none; }
+      .mode-tabs label {
+        flex: 1;
+        text-align: center;
+        padding: 10px 4px 9px;
+        cursor: pointer;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: #94a3b8;
+        font-family: "Plus Jakarta Sans", sans-serif;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        transition: color 0.15s, border-color 0.15s;
+        user-select: none;
+        white-space: nowrap;
+        position: relative;
+      }
+      .mode-tabs label:hover { color: #475569; }
+      .mode-tabs input[type="radio"]:checked + label {
+        color: #0f172a;
+        border-bottom-color: #334155;
+      }
+
+      /* ── Segmented controls (secondary: type de bien) ─ */
       .seg-group {
         display: flex;
         background: #f1f5f9;
-        border-radius: 9px;
-        padding: 4px;
-        gap: 3px;
+        border-radius: 8px;
+        padding: 3px;
+        gap: 2px;
       }
       .seg-group input[type="radio"] {
         display: none;
@@ -129,10 +158,10 @@
       .seg-group label {
         flex: 1;
         text-align: center;
-        padding: 7px 8px;
+        padding: 5px 8px;
         border-radius: 6px;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 12.5px;
         font-weight: 500;
         color: #94a3b8;
         transition: color 0.15s;
@@ -147,7 +176,7 @@
         background: white;
         color: #0f172a;
         box-shadow:
-          0 1px 4px rgba(0, 0, 0, 0.1),
+          0 1px 3px rgba(0, 0, 0, 0.08),
           0 0 0 0.5px rgba(0, 0, 0, 0.04);
       }
       .seg-group--wrap {
@@ -155,6 +184,28 @@
       }
       .seg-group--wrap label {
         flex: 1 1 calc(50% - 5px);
+      }
+
+      /* ── Filter body (below tabs) ──────────────── */
+      .filter-body {
+        padding: 12px 16px 14px;
+      }
+      .filter-body .filter-section + .filter-section {
+        margin-top: 12px;
+      }
+
+      /* ── Year inline row ───────────────────────── */
+      .year-inline {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .year-inline .filter-label {
+        flex-shrink: 0;
+        margin-bottom: 0;
+      }
+      .year-inline .filter-select {
+        flex: 1;
       }
 
       /* Info icon + tooltip */
@@ -223,11 +274,11 @@
       .filter-select {
         width: 100%;
         font-family: "Plus Jakarta Sans", sans-serif;
-        font-size: 13px;
+        font-size: 12.5px;
         font-weight: 500;
         border: 1.5px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 8px 32px 8px 12px;
+        border-radius: 7px;
+        padding: 6px 28px 6px 10px;
         cursor: pointer;
         background-color: #f8fafc;
         color: #334155;
@@ -333,7 +384,7 @@
         top: 10px;
         left: 10px;
         z-index: 2;
-        width: 300px;
+        width: 310px;
       }
       .search-wrap {
         position: relative;
@@ -785,20 +836,51 @@
         if (elEnd) elEnd.textContent = endYear;
       }
 
+      function modeTabs(active) {
+        const modes = [
+          ["prix", "Prix /m²"],
+          ["evolution", "Évolution"],
+          ["loyer", "Loyer /m²"],
+          ["rentabilite", "Rendement"],
+        ];
+        return '<div class="mode-tabs">' +
+          modes.map(([val, label]) =>
+            `<input type="radio" name="mode" id="seg-mode-${val}" value="${val}"${active === val ? " checked" : ""}>` +
+            `<label for="seg-mode-${val}">${label}</label>`
+          ).join("") +
+          '</div>';
+      }
+
       function renderFilterPanel() {
         const n = YEARS.length - 1;
         const baseIdx = YEARS.map(String).indexOf(baseYear);
         const endIdx = YEARS.map(String).indexOf(endYear);
 
+        const filterOptions =
+          activeMode === "loyer" || activeMode === "rentabilite"
+            ? [
+                ["residentiel", "Résidentiel"],
+                ["maison", "Maison"],
+                ["appart", "Appart"],
+              ]
+            : [
+                ["residentiel", "Résidentiel"],
+                ["maison", "Maison"],
+                ["appart", "Appart"],
+                ["terrain", "Terrain"],
+              ];
+
         const yearSection =
           activeMode === "prix" || activeMode === "loyer" || activeMode === "rentabilite"
             ? `<div class="filter-section">
-              <div class="filter-label-row"><span class="filter-label">Année</span></div>
-              <select name="year" class="filter-select">
-                <option value="all"${activeYear === "all" ? " selected" : ""}>Toutes les années</option>
-                ${YEARS.map((y) => `<option value="${y}"${String(y) === activeYear ? " selected" : ""}>${y}</option>`).join("")}
-              </select>
-            </div>`
+                <div class="year-inline">
+                  <span class="filter-label">Année</span>
+                  <select name="year" class="filter-select">
+                    <option value="all"${activeYear === "all" ? " selected" : ""}>Toutes</option>
+                    ${YEARS.map((y) => `<option value="${y}"${String(y) === activeYear ? " selected" : ""}>${y}</option>`).join("")}
+                  </select>
+                </div>
+              </div>`
             : `<div class="filter-section">
               <div class="year-slider-header">
                 <span class="filter-label">Période</span>
@@ -823,55 +905,14 @@
               </div>
             </div>`;
 
-        const filterOptions =
-          activeMode === "loyer" || activeMode === "rentabilite"
-            ? [
-                [
-                  "residentiel",
-                  'Résidentiel<i class="info-icon" data-tip="Regroupe les maisons et les appartements">i</i>',
-                ],
-                ["maison", "Maison"],
-                ["appart", "Appart"],
-              ]
-            : [
-                [
-                  "residentiel",
-                  'Résidentiel<i class="info-icon" data-tip="Regroupe les maisons et les appartements">i</i>',
-                ],
-                ["maison", "Maison"],
-                ["appart", "Appart"],
-                ["terrain", "Terrain"],
-              ];
-
-        filterDiv.innerHTML = `<div class="filter-section">
-            <div class="filter-label-row"><span class="filter-label">Affichage</span></div>
-            ${seg(
-              "mode",
-              [
-                [
-                  "prix",
-                  'Prix au m²<i class="info-icon" data-tip="Prix médian au m² des transactions DVF">i</i>',
-                ],
-                ["evolution", "Évolution"],
-                [
-                  "loyer",
-                  'Loyer /m²<i class="info-icon" data-tip="Loyer mensuel au m² (prédit par un modèle économétrique), charges comprises, pour des biens non meublés — source MEF/DHUP">i</i>',
-                ],
-                [
-                  "rentabilite",
-                  'Rendement<i class="info-icon" data-tip="Rentabilité locative brute annuelle = loyer mensuel × 12 / prix au m²">i</i>',
-                ],
-              ],
-              activeMode,
-              true,
-            )}
-          </div>
-          <div class="filter-section">
-            <div class="filter-label-row"><span class="filter-label">Type de bien</span></div>
-            ${seg("filter", filterOptions, activeFilter, true)}
-          </div>
-          <hr class="filter-divider">
-          ${yearSection}`;
+        filterDiv.innerHTML =
+          modeTabs(activeMode) +
+          `<div class="filter-body">
+            <div class="filter-section">
+              ${seg("filter", filterOptions, activeFilter)}
+            </div>
+            ${yearSection}
+          </div>`;
       }
 
       renderFilterPanel();

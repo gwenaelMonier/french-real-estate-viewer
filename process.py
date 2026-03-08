@@ -1,20 +1,21 @@
 import duckdb, json
-from collections import defaultdict
 
 CSV = 'data/full_dvf.csv'  # chemin vers le fichier 3.5 Go
 
-STAT_COLS = ['med_m2', 'med_m2_maison', 'med_m2_appart',
-            'nb', 'nb_maison', 'nb_appart']
+con = duckdb.connect()
+con.execute("SET memory_limit='2GB'")
+con.execute("SET threads=4")
 
-DEDUP_CTE = """
+cursor = con.execute(f"""
     WITH raw AS (
         SELECT
             id_mutation, code_commune, nom_commune, code_departement,
             type_local,
             valeur_fonciere,
             surface_reelle_bati,
-            latitude, longitude
-        FROM read_csv_auto('{csv}', sample_size=-1)
+            latitude, longitude,
+            YEAR(CAST(date_mutation AS DATE)) AS annee
+        FROM read_csv_auto('{CSV}', sample_size=-1)
         WHERE nature_mutation = 'Vente'
           AND type_local IN ('Maison', 'Appartement')
           AND surface_reelle_bati > 0
@@ -26,13 +27,14 @@ DEDUP_CTE = """
     per_mutation AS (
         SELECT
             id_mutation, code_commune, nom_commune, code_departement,
+            annee,
             MAX(type_local) AS type_local,
             MAX(valeur_fonciere) AS valeur_fonciere,
             SUM(surface_reelle_bati) AS surface_totale,
             AVG(latitude) AS latitude,
             AVG(longitude) AS longitude
         FROM raw
-        GROUP BY id_mutation, code_commune, nom_commune, code_departement
+        GROUP BY id_mutation, code_commune, nom_commune, code_departement, annee
         HAVING COUNT(DISTINCT type_local) = 1  -- exclure les mutations mixtes Maison+Appart
     ),
     dedup AS (
@@ -40,108 +42,92 @@ DEDUP_CTE = """
             valeur_fonciere / surface_totale AS prix_m2
         FROM per_mutation
         WHERE surface_totale BETWEEN 9 AND 1000
+    ),
+    global_agg AS (
+        SELECT
+            code_commune, nom_commune, code_departement AS code_dep,
+            ROUND(MEDIAN(prix_m2)) AS med_m2,
+            ROUND(MEDIAN(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS med_m2_maison,
+            ROUND(MEDIAN(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS med_m2_appart,
+            COUNT(*) AS nb,
+            COUNT(CASE WHEN type_local = 'Maison' THEN 1 END) AS nb_maison,
+            COUNT(CASE WHEN type_local = 'Appartement' THEN 1 END) AS nb_appart,
+            ROUND(AVG(latitude), 5) AS lat,
+            ROUND(AVG(longitude), 5) AS lon
+        FROM dedup
+        GROUP BY code_commune, nom_commune, code_departement
+        HAVING COUNT(*) >= 10
+    ),
+    year_agg AS (
+        SELECT
+            code_commune, annee,
+            ROUND(MEDIAN(prix_m2)) AS med_m2,
+            ROUND(MEDIAN(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS med_m2_maison,
+            ROUND(MEDIAN(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS med_m2_appart,
+            COUNT(*) AS nb,
+            COUNT(CASE WHEN type_local = 'Maison' THEN 1 END) AS nb_maison,
+            COUNT(CASE WHEN type_local = 'Appartement' THEN 1 END) AS nb_appart
+        FROM dedup
+        GROUP BY code_commune, annee
+        HAVING COUNT(*) >= 5
+    ),
+    year_json AS (
+        SELECT
+            code_commune,
+            json_group_object(
+                CAST(annee AS VARCHAR),
+                json_object(
+                    'med_m2', med_m2,
+                    'med_m2_maison', med_m2_maison,
+                    'med_m2_appart', med_m2_appart,
+                    'nb', nb,
+                    'nb_maison', nb_maison,
+                    'nb_appart', nb_appart
+                )
+            ) AS years_json
+        FROM year_agg
+        GROUP BY code_commune
     )
-""".replace('{csv}', CSV)
-
-# Agrégats globaux (toutes années)
-global_rows = duckdb.execute(f"""
-    {DEDUP_CTE}
     SELECT
-        code_commune,
-        nom_commune,
-        code_departement AS code_dep,
-        ROUND(MEDIAN(prix_m2)) AS med_m2,
-        ROUND(MEDIAN(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS med_m2_maison,
-        ROUND(MEDIAN(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS med_m2_appart,
-        COUNT(*) AS nb,
-        COUNT(CASE WHEN type_local = 'Maison' THEN 1 END) AS nb_maison,
-        COUNT(CASE WHEN type_local = 'Appartement' THEN 1 END) AS nb_appart,
-        ROUND(AVG(latitude), 5) AS lat,
-        ROUND(AVG(longitude), 5) AS lon
-    FROM dedup
-    GROUP BY code_commune, nom_commune, code_departement
-    HAVING COUNT(*) >= 10
-    ORDER BY code_commune
-""").fetchall()
+        g.code_commune,
+        g.nom_commune,
+        g.code_dep,
+        g.med_m2, g.med_m2_maison, g.med_m2_appart,
+        g.nb, g.nb_maison, g.nb_appart,
+        g.lat, g.lon,
+        COALESCE(yj.years_json, '{{}}') AS years_json
+    FROM global_agg g
+    LEFT JOIN year_json yj ON yj.code_commune = g.code_commune
+    ORDER BY g.code_commune
+""")
 
-global_cols = ['code_commune', 'nom_commune', 'code_dep',
+GLOBAL_COLS = ['code_commune', 'nom_commune', 'code_dep',
                'med_m2', 'med_m2_maison', 'med_m2_appart',
                'nb', 'nb_maison', 'nb_appart', 'lat', 'lon']
-communes = {r[0]: dict(zip(global_cols, r)) for r in global_rows}
-
-# Agrégats par année
-year_rows = duckdb.execute(f"""
-    WITH raw AS (
-        SELECT
-            id_mutation, code_commune,
-            type_local,
-            valeur_fonciere,
-            surface_reelle_bati,
-            YEAR(CAST(date_mutation AS DATE)) AS annee
-        FROM read_csv_auto('{CSV}', sample_size=-1)
-        WHERE nature_mutation = 'Vente'
-          AND type_local IN ('Maison', 'Appartement')
-          AND surface_reelle_bati > 0
-          AND valeur_fonciere > 0
-    ),
-    per_mutation AS (
-        SELECT
-            id_mutation, code_commune, annee,
-            MAX(type_local) AS type_local,
-            MAX(valeur_fonciere) AS valeur_fonciere,
-            SUM(surface_reelle_bati) AS surface_totale
-        FROM raw
-        GROUP BY id_mutation, code_commune, annee
-        HAVING COUNT(DISTINCT type_local) = 1
-    ),
-    dedup AS (
-        SELECT *,
-            valeur_fonciere / surface_totale AS prix_m2
-        FROM per_mutation
-        WHERE surface_totale BETWEEN 9 AND 1000
-    )
-    SELECT
-        code_commune,
-        annee,
-        ROUND(MEDIAN(prix_m2)) AS med_m2,
-        ROUND(MEDIAN(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS med_m2_maison,
-        ROUND(MEDIAN(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS med_m2_appart,
-        COUNT(*) AS nb,
-        COUNT(CASE WHEN type_local = 'Maison' THEN 1 END) AS nb_maison,
-        COUNT(CASE WHEN type_local = 'Appartement' THEN 1 END) AS nb_appart
-    FROM dedup
-    GROUP BY code_commune, annee
-    HAVING COUNT(*) >= 5
-    ORDER BY code_commune, annee
-""").fetchall()
-
-year_cols = ['code_commune', 'annee',
-             'med_m2', 'med_m2_maison', 'med_m2_appart',
-             'nb', 'nb_maison', 'nb_appart']
 
 all_years = set()
-year_by_commune = defaultdict(dict)
-for row in year_rows:
-    d = dict(zip(year_cols, row))
-    code = d['code_commune']
-    annee = d['annee']
-    all_years.add(annee)
-    if code in communes:
-        year_by_commune[code][str(annee)] = {k: d[k] for k in STAT_COLS}
-
-# Injection des données par année dans chaque commune
-for code, c in communes.items():
-    c['years'] = year_by_commune.get(code, {})
-
-data = list(communes.values())
-years_sorted = sorted(all_years)
+nb_communes = 0
 
 with open('communes.js', 'w', encoding='utf-8') as f:
+    f.write('const COMMUNES = [\n')
+    first = True
+    while True:
+        row = cursor.fetchone()
+        if row is None:
+            break
+        if not first:
+            f.write(',\n')
+        commune = dict(zip(GLOBAL_COLS, row[:11]))
+        years = json.loads(row[11])
+        all_years.update(years.keys())
+        commune['years'] = years
+        json.dump(commune, f, ensure_ascii=False, separators=(',', ':'))
+        first = False
+        nb_communes += 1
+    f.write('\n];\n')
+    years_sorted = sorted(int(y) for y in all_years)
     f.write('const YEARS = ')
     json.dump(years_sorted, f)
     f.write(';\n')
-    f.write('const COMMUNES = ')
-    json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
-    f.write(';')
 
-print(f"communes.js généré : {len(data)} communes, années : {years_sorted}")
+print(f"communes.js généré : {nb_communes} communes, années : {years_sorted}")

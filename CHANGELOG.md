@@ -1,5 +1,12 @@
 # Changelog — French real estate viewer
 
+## 1.5.1 — DuckDB pipeline optimization
+
+- Refactored SQL queries in `process.py` for better performance
+- Simplified CTE structure, identical output format
+
+---
+
 ## 1.5.0 — Removed average prices
 
 - **Removed average prices**, keeping only medians

@@ -1,5 +1,13 @@
 # Changelog — French real estate viewer
 
+## 1.9.1 — Data size optimization
+
+- Reduced `communes.js` from 45.8 MB to 21.5 MB (−53%)
+- Removed redundant client-side fields
+- Noticeably improved initial load time
+
+---
+
 ## 1.9.0 — UI redesign
 
 - Redesigned control panel (layout, typography, spacing)

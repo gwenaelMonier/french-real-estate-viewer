@@ -505,13 +505,13 @@
       const scales = {};
       for (const year of ["all", ...YEARS.map(String)]) {
         for (const [filterKey, medField] of [
-          ["residentiel", "med_m2"],
-          ["maison", "med_m2_maison"],
-          ["appart", "med_m2_appart"],
-          ["terrain", "med_m2_terrain"],
+          ["residentiel", "m"],
+          ["maison", "mm"],
+          ["appart", "ma"],
+          ["terrain", "mt"],
         ]) {
           const vals = COMMUNES.map((c) => {
-            const s = year === "all" ? c : c.years?.[year];
+            const s = year === "all" ? c : c.y?.[year];
             return s ? s[medField] : null;
           })
             .filter((v) => v != null)
@@ -526,17 +526,17 @@
       // Pré-calcul des échelles d'évolution (pour chaque filtre × baseYear × endYear)
       const evolutionScales = {};
       for (const [filterKey, medField] of [
-        ["residentiel", "med_m2"],
-        ["maison", "med_m2_maison"],
-        ["appart", "med_m2_appart"],
-        ["terrain", "med_m2_terrain"],
+        ["residentiel", "m"],
+        ["maison", "mm"],
+        ["appart", "ma"],
+        ["terrain", "mt"],
       ]) {
         for (const baseYr of YEARS.map(String)) {
           for (const endYr of YEARS.map(String)) {
             if (endYr <= baseYr) continue;
             const evols = COMMUNES.map((c) => {
-              const base = c.years?.[baseYr]?.[medField];
-              const latest = c.years?.[endYr]?.[medField];
+              const base = c.y?.[baseYr]?.[medField];
+              const latest = c.y?.[endYr]?.[medField];
               if (!base || !latest) return null;
               return ((latest - base) / base) * 100;
             })
@@ -554,12 +554,12 @@
       const loyerScales = {};
       for (const year of ["all", ...YEARS.map(String)]) {
         for (const [filterKey, field] of [
-          ["residentiel", "loyer_residentiel"],
-          ["maison", "loyer_maison"],
-          ["appart", "loyer_appart"],
+          ["residentiel", "lr"],
+          ["maison", "lm"],
+          ["appart", "lp"],
         ]) {
           const vals = COMMUNES.map((c) => {
-            const s = year === "all" ? c : c.years?.[year];
+            const s = year === "all" ? c : c.y?.[year];
             return s ? s[field] : null;
           })
             .filter((v) => v != null)
@@ -575,12 +575,12 @@
       const rentabiliteScales = {};
       for (const year of ["all", ...YEARS.map(String)]) {
         for (const [filterKey, prixField, lyrField] of [
-          ["residentiel", "med_m2",        "loyer_residentiel"],
-          ["maison",      "med_m2_maison", "loyer_maison"],
-          ["appart",      "med_m2_appart", "loyer_appart"],
+          ["residentiel", "m",        "lr"],
+          ["maison",      "mm", "lm"],
+          ["appart",      "ma", "lp"],
         ]) {
           const vals = COMMUNES.map((c) => {
-            const s = year === "all" ? c : c.years?.[year];
+            const s = year === "all" ? c : c.y?.[year];
             if (!s) return null;
             const prix = s[prixField];
             const loyer = s[lyrField];
@@ -596,13 +596,13 @@
 
       function getStats(c) {
         if (activeYear === "all") return c;
-        return c.years?.[activeYear] ?? null;
+        return c.y?.[activeYear] ?? null;
       }
       function priceField() {
-        if (activeFilter === "residentiel") return "med_m2";
-        if (activeFilter === "maison") return "med_m2_maison";
-        if (activeFilter === "appart") return "med_m2_appart";
-        return "med_m2_terrain";
+        if (activeFilter === "residentiel") return "m";
+        if (activeFilter === "maison") return "mm";
+        if (activeFilter === "appart") return "ma";
+        return "mt";
       }
 
       function getPrice(c) {
@@ -613,10 +613,10 @@
       function getNb(c) {
         const s = getStats(c);
         if (!s) return null;
-        if (activeFilter === "residentiel") return s.nb;
-        if (activeFilter === "maison") return s.nb_maison;
-        if (activeFilter === "appart") return s.nb_appart;
-        return s.nb_terrain;
+        if (activeFilter === "residentiel") return s.n;
+        if (activeFilter === "maison") return s.nm;
+        if (activeFilter === "appart") return s.na;
+        return s.nt;
       }
 
       function priceToColor(price) {
@@ -626,9 +626,9 @@
       }
 
       function loyerField() {
-        if (activeFilter === "maison") return "loyer_maison";
-        if (activeFilter === "appart") return "loyer_appart";
-        return "loyer_residentiel";
+        if (activeFilter === "maison") return "lm";
+        if (activeFilter === "appart") return "lp";
+        return "lr";
       }
 
       function getLoyer(c) {
@@ -662,8 +662,8 @@
 
       function getEvolution(c) {
         const field = priceField();
-        const base = c.years?.[baseYear]?.[field];
-        const latest = c.years?.[endYear]?.[field];
+        const base = c.y?.[baseYear]?.[field];
+        const latest = c.y?.[endYear]?.[field];
         if (!base || !latest) return null;
         return ((latest - base) / base) * 100;
       }
@@ -679,7 +679,7 @@
       // Index COMMUNES par code_commune
       const communeIndex = {};
       COMMUNES.forEach((c) => {
-        communeIndex[c.code_commune] = c;
+        communeIndex[c.cc] = c;
       });
 
       // Cache GeoJSON enrichi
@@ -689,8 +689,8 @@
         geojson.features.forEach((f) => {
           const code = String(f.properties.code);
           const c = communeIndex[code];
-          f.properties.nomCommune = c?.nom_commune ?? f.properties.nom ?? "";
-          f.properties.codeDep = c?.code_dep ?? "";
+          f.properties.nomCommune = c?.nc ?? f.properties.nom ?? "";
+          f.properties.codeDep = c?.cd ?? "";
 
           if (activeMode === "prix") {
             const price = c ? getPrice(c) : null;
@@ -706,8 +706,8 @@
             f.properties.fillColor = evol != null ? evolutionToColor(evol) : "";
             f.properties.evol = evol != null ? evol : -999;
             const field = priceField();
-            f.properties.priceBase = c?.years?.[baseYear]?.[field] ?? -1;
-            f.properties.priceLatest = c?.years?.[endYear]?.[field] ?? -1;
+            f.properties.priceBase = c?.y?.[baseYear]?.[field] ?? -1;
+            f.properties.priceLatest = c?.y?.[endYear]?.[field] ?? -1;
             f.properties.price = -1;
             f.properties.nb = 0;
             f.properties.loyer = -1;
@@ -727,7 +727,7 @@
             const loyer = c ? getLoyer(c) : null;
             f.properties.fillColor = loyer != null ? loyerToColor(loyer) : "";
             f.properties.loyer = loyer != null ? loyer : -1;
-            const nbField = loyerField().replace("loyer_", "nb_loyer_");
+            const nbField = "n" + loyerField();
             f.properties.nbLoyer =
               loyer != null ? (getStats(c)?.[nbField] ?? 0) : 0;
             f.properties.price = -1;
@@ -980,9 +980,9 @@
         resultsList.innerHTML = matches
           .map(
             (c) =>
-              `<li data-lon="${c.lon}" data-lat="${c.lat}" data-name="${c.nom_commune}">
-            <span>${c.nom_commune}</span>
-            <span class="dep">${c.code_dep}</span>
+              `<li data-lon="${c.lo}" data-lat="${c.la}" data-name="${c.nc}">
+            <span>${c.nc}</span>
+            <span class="dep">${c.cd}</span>
           </li>`,
           )
           .join("");
@@ -997,13 +997,13 @@
           return;
         }
         const matches = COMMUNES.filter((c) =>
-          normalize(c.nom_commune).includes(q),
+          normalize(c.nc).includes(q),
         )
           .sort((a, b) => {
-            const aStarts = normalize(a.nom_commune).startsWith(q);
-            const bStarts = normalize(b.nom_commune).startsWith(q);
+            const aStarts = normalize(a.nc).startsWith(q);
+            const bStarts = normalize(b.nc).startsWith(q);
             if (aStarts !== bStarts) return aStarts ? -1 : 1;
-            return a.nom_commune.localeCompare(b.nom_commune);
+            return a.nc.localeCompare(b.nc);
           })
           .slice(0, MAX_RESULTS);
         renderResults(matches);

@@ -445,12 +445,12 @@
       // Filtres actifs
       let activeFilter = "residentiel"; // 'residentiel' | 'maison' | 'appart' | 'terrain'
       let activeYear = "all"; // 'all' | '2019' | '2020' | ...
-      let activeMode = "prix"; // 'prix' | 'evolution' | 'loyer'
+      let activeMode = "prix"; // 'prix' | 'evolution' | 'loyer' | 'rentabilite'
       const LATEST_YEAR = String(Math.max(...YEARS));
       let baseYear = String(YEARS[0]);
       let endYear = LATEST_YEAR;
 
-      // Pré-calcul des échelles P3/P97 pour chaque combinaison année × type
+      // Pré-calcul des échelles P4/P96 pour chaque combinaison année × type
       const scales = {};
       for (const year of ["all", ...YEARS.map(String)]) {
         for (const [filterKey, medField] of [
@@ -466,8 +466,8 @@
             .filter((v) => v != null)
             .sort((a, b) => a - b);
           scales[`${year}_${filterKey}`] = {
-            p3: vals[Math.floor(vals.length * 0.03)],
-            p97: vals[Math.floor(vals.length * 0.97)],
+            p4: vals[Math.floor(vals.length * 0.04)],
+            p96: vals[Math.floor(vals.length * 0.96)],
           };
         }
       }
@@ -492,14 +492,14 @@
               .filter((v) => v != null)
               .sort((a, b) => a - b);
             evolutionScales[`${baseYr}_${endYr}_${filterKey}`] = {
-              p3: evols[Math.floor(evols.length * 0.03)],
-              p97: evols[Math.floor(evols.length * 0.97)],
+              p4: evols[Math.floor(evols.length * 0.04)],
+              p96: evols[Math.floor(evols.length * 0.96)],
             };
           }
         }
       }
 
-      // Pré-calcul des échelles loyer P3/P97 pour chaque combinaison année × type
+      // Pré-calcul des échelles loyer P4/P96 pour chaque combinaison année × type
       const loyerScales = {};
       for (const year of ["all", ...YEARS.map(String)]) {
         for (const [filterKey, field] of [
@@ -514,8 +514,31 @@
             .filter((v) => v != null)
             .sort((a, b) => a - b);
           loyerScales[`${year}_${filterKey}`] = {
-            p3: vals[Math.floor(vals.length * 0.03)],
-            p97: vals[Math.floor(vals.length * 0.97)],
+            p4: vals[Math.floor(vals.length * 0.04)],
+            p96: vals[Math.floor(vals.length * 0.96)],
+          };
+        }
+      }
+
+      // Pré-calcul des échelles rentabilité P4/P96 pour chaque combinaison année × type
+      const rentabiliteScales = {};
+      for (const year of ["all", ...YEARS.map(String)]) {
+        for (const [filterKey, prixField, lyrField] of [
+          ["residentiel", "med_m2",        "loyer_residentiel"],
+          ["maison",      "med_m2_maison", "loyer_maison"],
+          ["appart",      "med_m2_appart", "loyer_appart"],
+        ]) {
+          const vals = COMMUNES.map((c) => {
+            const s = year === "all" ? c : c.years?.[year];
+            if (!s) return null;
+            const prix = s[prixField];
+            const loyer = s[lyrField];
+            if (!prix || !loyer) return null;
+            return (loyer * 12 / prix) * 100;
+          }).filter((v) => v != null).sort((a, b) => a - b);
+          rentabiliteScales[`${year}_${filterKey}`] = {
+            p4:  vals[Math.floor(vals.length * 0.04)],
+            p96: vals[Math.floor(vals.length * 0.96)],
           };
         }
       }
@@ -546,8 +569,8 @@
       }
 
       function priceToColor(price) {
-        const { p3, p97 } = scales[`${activeYear}_${activeFilter}`];
-        const t = Math.max(0, Math.min(1, (price - p3) / (p97 - p3)));
+        const { p4, p96 } = scales[`${activeYear}_${activeFilter}`];
+        const t = Math.max(0, Math.min(1, (price - p4) / (p96 - p4)));
         return `hsl(${Math.round(120 * (1 - t))}, 80%, 45%)`;
       }
 
@@ -565,8 +588,24 @@
 
       function loyerToColor(loyer) {
         const key = `${activeYear}_${activeFilter === "terrain" ? "residentiel" : activeFilter}`;
-        const { p3, p97 } = loyerScales[key];
-        const t = Math.max(0, Math.min(1, (loyer - p3) / (p97 - p3)));
+        const { p4, p96 } = loyerScales[key];
+        const t = Math.max(0, Math.min(1, (loyer - p4) / (p96 - p4)));
+        return `hsl(${Math.round(120 * (1 - t))}, 80%, 45%)`;
+      }
+
+      function getRentabilite(c) {
+        const s = getStats(c);
+        if (!s) return null;
+        const prix  = s[priceField()];
+        const loyer = s[loyerField()];
+        if (!prix || !loyer) return null;
+        return (loyer * 12 / prix) * 100;
+      }
+
+      function rentabiliteToColor(r) {
+        const key = `${activeYear}_${activeFilter}`;
+        const { p4, p96 } = rentabiliteScales[key];
+        const t = Math.max(0, Math.min(1, (r - p4) / (p96 - p4)));
         return `hsl(${Math.round(120 * (1 - t))}, 80%, 45%)`;
       }
 
@@ -579,9 +618,9 @@
       }
 
       function evolutionToColor(pct) {
-        const { p3, p97 } =
+        const { p4, p96 } =
           evolutionScales[`${baseYear}_${endYear}_${activeFilter}`];
-        const range = Math.max(Math.abs(p3), Math.abs(p97));
+        const range = Math.max(Math.abs(p4), Math.abs(p96));
         const t = Math.max(0, Math.min(1, (pct + range) / (2 * range)));
         return `hsl(${Math.round(120 * (1 - t))}, 80%, 45%)`;
       }
@@ -610,6 +649,7 @@
             f.properties.evol = -999;
             f.properties.loyer = -1;
             f.properties.nbLoyer = 0;
+            f.properties.rentabilite = -1;
           } else if (activeMode === "evolution") {
             const evol = c ? getEvolution(c) : null;
             f.properties.fillColor = evol != null ? evolutionToColor(evol) : "";
@@ -620,6 +660,16 @@
             f.properties.price = -1;
             f.properties.nb = 0;
             f.properties.loyer = -1;
+            f.properties.nbLoyer = 0;
+            f.properties.rentabilite = -1;
+          } else if (activeMode === "rentabilite") {
+            const r = c ? getRentabilite(c) : null;
+            f.properties.fillColor = r != null ? rentabiliteToColor(r) : "";
+            f.properties.rentabilite = r != null ? r : -1;
+            f.properties.price   = r != null ? (getStats(c)?.[priceField()]  ?? -1) : -1;
+            f.properties.loyer   = r != null ? (getStats(c)?.[loyerField()]  ?? -1) : -1;
+            f.properties.nb = 0;
+            f.properties.evol = -999;
             f.properties.nbLoyer = 0;
           } else {
             // mode loyer
@@ -632,6 +682,7 @@
             f.properties.price = -1;
             f.properties.nb = 0;
             f.properties.evol = -999;
+            f.properties.rentabilite = -1;
           }
         });
         return geojson;
@@ -651,36 +702,46 @@
       const legendDiv = document.getElementById("legend");
       function updateLegend() {
         if (activeMode === "prix") {
-          const { p3, p97 } = scales[`${activeYear}_${activeFilter}`];
+          const { p4, p96 } = scales[`${activeYear}_${activeFilter}`];
           const titre = "Prix médian au m²";
           legendDiv.innerHTML =
             `<b>${titre}</b>` +
             '<div class="legend-gradient"></div>' +
             '<div class="legend-labels">' +
-            `<span>${Math.round(p3).toLocaleString("fr-FR")} €</span>` +
-            `<span>${Math.round((p3 + p97) / 2).toLocaleString("fr-FR")} €</span>` +
-            `<span>${Math.round(p97).toLocaleString("fr-FR")} €</span>` +
+            `<span>${Math.round(p4).toLocaleString("fr-FR")} €</span>` +
+            `<span>${Math.round((p4 + p96) / 2).toLocaleString("fr-FR")} €</span>` +
+            `<span>${Math.round(p96).toLocaleString("fr-FR")} €</span>` +
             "</div>";
         } else if (activeMode === "evolution") {
-          const { p3, p97 } =
+          const { p4, p96 } =
             evolutionScales[`${baseYear}_${endYear}_${activeFilter}`];
-          const range = Math.max(Math.abs(p3), Math.abs(p97));
+          const range = Math.max(Math.abs(p4), Math.abs(p96));
           legendDiv.innerHTML =
             `<b>Évolution ${baseYear} ${ARROW_DARK} ${endYear}</b>` +
             '<div class="legend-gradient legend-gradient-evol"></div>' +
             '<div class="legend-labels">' +
             `<span>${(-range).toFixed(0)}%</span><span>0%</span><span>+${range.toFixed(0)}%</span>` +
             "</div>";
+        } else if (activeMode === "rentabilite") {
+          const { p4, p96 } = rentabiliteScales[`${activeYear}_${activeFilter}`];
+          legendDiv.innerHTML =
+            `<b>Rentabilité brute / an</b>` +
+            '<div class="legend-gradient"></div>' +
+            '<div class="legend-labels">' +
+            `<span>${p4.toFixed(1)}%</span>` +
+            `<span>${((p4 + p96) / 2).toFixed(1)}%</span>` +
+            `<span>${p96.toFixed(1)}%</span>` +
+            "</div>";
         } else {
           const loyerKey = `${activeYear}_${activeFilter === "terrain" ? "residentiel" : activeFilter}`;
-          const { p3, p97 } = loyerScales[loyerKey];
+          const { p4, p96 } = loyerScales[loyerKey];
           legendDiv.innerHTML =
             `<b>Loyer au m² / mois</b>` +
             '<div class="legend-gradient"></div>' +
             '<div class="legend-labels">' +
-            `<span>${p3.toFixed(1)} €</span>` +
-            `<span>${((p3 + p97) / 2).toFixed(1)} €</span>` +
-            `<span>${p97.toFixed(1)} €</span>` +
+            `<span>${p4.toFixed(1)} €</span>` +
+            `<span>${((p4 + p96) / 2).toFixed(1)} €</span>` +
+            `<span>${p96.toFixed(1)} €</span>` +
             "</div>";
         }
       }
@@ -730,7 +791,7 @@
         const endIdx = YEARS.map(String).indexOf(endYear);
 
         const yearSection =
-          activeMode === "prix" || activeMode === "loyer"
+          activeMode === "prix" || activeMode === "loyer" || activeMode === "rentabilite"
             ? `<div class="filter-section">
               <div class="filter-label-row"><span class="filter-label">Année</span></div>
               <select name="year" class="filter-select">
@@ -763,7 +824,7 @@
             </div>`;
 
         const filterOptions =
-          activeMode === "loyer"
+          activeMode === "loyer" || activeMode === "rentabilite"
             ? [
                 [
                   "residentiel",
@@ -796,6 +857,10 @@
                   "loyer",
                   'Loyer /m²<i class="info-icon" data-tip="Loyer mensuel au m² (prédit par un modèle économétrique), charges comprises, pour des biens non meublés — source MEF/DHUP">i</i>',
                 ],
+                [
+                  "rentabilite",
+                  'Rendement<i class="info-icon" data-tip="Rentabilité locative brute annuelle = loyer mensuel × 12 / prix au m²">i</i>',
+                ],
               ],
               activeMode,
               true,
@@ -814,7 +879,7 @@
       filterDiv.addEventListener("change", (e) => {
         if (e.target.name === "mode") {
           activeMode = e.target.value;
-          if (activeMode === "loyer" && activeFilter === "terrain") {
+          if ((activeMode === "loyer" || activeMode === "rentabilite") && activeFilter === "terrain") {
             activeFilter = "residentiel";
           }
           renderFilterPanel();
@@ -987,6 +1052,9 @@
                     ` (${baseYear} ${ARROW_DARK} ${endYear})<br>` +
                     `<small>${Number(p.priceBase).toLocaleString("fr-FR")} ${ARROW_DARK} ` +
                     `${Number(p.priceLatest).toLocaleString("fr-FR")} €/m²</small>`
+                  : activeMode === "rentabilite" && p.rentabilite >= 0
+                    ? `<b>${p.nomCommune}</b> (${p.codeDep})<br>${Number(p.rentabilite).toFixed(1)}% brut/an<br>` +
+                      `<small>${Number(p.price).toLocaleString("fr-FR")} €/m² · ${Number(p.loyer).toFixed(1)} €/m²/mois</small>`
                   : activeMode === "loyer" && p.loyer >= 0
                     ? `<b>${p.nomCommune}</b> (${p.codeDep})<br>${Number(p.loyer).toFixed(1)} €/m²/mois<br><small>${p.nbLoyer} annonces</small>`
                     : activeMode === "prix" && p.price >= 0

@@ -1,5 +1,14 @@
 # Changelog — French real estate viewer
 
+## 1.8.0 — Gross yields
+
+- **Gross yield calculation**: `(annual_rent / price_per_m²) × 100`
+- New "Yield" visualization mode
+- Legend and tooltip adapted for percentages
+- Builds on rental data introduced in 1.7.0
+
+---
+
 ## 1.7.0 — Rental price data
 
 - **MEF/DHUP rental price integration** (apartments, houses, residential)

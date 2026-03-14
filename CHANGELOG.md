@@ -1,5 +1,11 @@
 # Changelog — French real estate viewer
 
+## 1.11.1 — Refactor cleanup
+
+- Reduced `app.js` (~20 KB vs 24 KB) after code simplification
+
+---
+
 ## 1.11.0 — Split into separate files
 
 - **Split monolithic HTML** into three files: `index.html`, `app.js`, `style.css`

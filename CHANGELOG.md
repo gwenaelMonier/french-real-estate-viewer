@@ -1,5 +1,14 @@
 # Changelog — French real estate viewer
 
+## 1.10.0 — Redesigned evolution mode
+
+- Full visual redesign of the evolution mode
+- `showEvolution` flag to toggle between absolute price and % change
+- Freely selectable base year and end year for comparison
+- Tooltip and legend adapted for the evolution mode
+
+---
+
 ## 1.9.1 — Data size optimization
 
 - Reduced `communes.js` from 45.8 MB to 21.5 MB (−53%)

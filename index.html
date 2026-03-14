@@ -3,43 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Carte interactive de la France</title>
-    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
+    <title>DVF Viewer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div id="map"></div>
-
-    <div
-      id="legend"
-      class="legend"
-      style="position: absolute; bottom: 36px; left: 10px; z-index: 1"
-    ></div>
-
-    <div id="search-control">
-      <div class="search-wrap">
-        <input
-          id="search-input"
-          type="text"
-          placeholder="Rechercher une commune…"
-          autocomplete="off"
-        />
-        <button id="search-clear" hidden>✕</button>
-      </div>
-      <ul id="search-results" hidden></ul>
-    </div>
-
-    <div
-      id="filter-control"
-      class="filter-control"
-      style="position: absolute; top: 76px; left: 10px; z-index: 1"
-    ></div>
-
-    <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
-    <script src="communes.js"></script>
-    <script src="app.js"></script>
+    <div id="root"></div>
+    <script src="/communes.js"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,5 +1,17 @@
 # Changelog — French real estate viewer
 
+## 2.0.0 — React + TypeScript migration
+
+- **Full rewrite in React + TypeScript with Vite**
+- Component architecture: `MapView`, `Legend`, `Search`, `FilterPanel`
+- `types.ts` for shared types (`City`, `ComputedData`, `Scale`, etc.)
+- `config.ts`: filter fields, scale computation, `getScaleForMode`
+- `data.ts`: `getStats`, `getValue`, `getChange`, `valueToColor`, `changeToColor`, `computeFeatureState`, `getTooltipData`
+- Vite build, strict TypeScript compilation (`noUncheckedIndexedAccess`, etc.)
+- Replaced global variables with React props and context
+
+---
+
 ## 1.11.1 — Refactor cleanup
 
 - Reduced `app.js` (~20 KB vs 24 KB) after code simplification

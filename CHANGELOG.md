@@ -1,5 +1,13 @@
 # Changelog — French real estate viewer
 
+## 1.11.0 — Split into separate files
+
+- **Split monolithic HTML** into three files: `index.html`, `app.js`, `style.css`
+- `index.html` reduced to a minimal shell
+- Architectural preparation before the React migration
+
+---
+
 ## 1.10.0 — Redesigned evolution mode
 
 - Full visual redesign of the evolution mode

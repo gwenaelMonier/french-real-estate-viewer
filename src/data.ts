@@ -1,5 +1,6 @@
 import type { Commune, ComputedData, FilterType, ModeType, YearData } from "./types";
 import { FILTER_FIELDS, getScaleForMode, type Scale } from "./config";
+import type maplibregl from "maplibre-gl";
 
 const MIN_SAMPLES_PER_YEAR = 15;
 
@@ -78,66 +79,110 @@ export function buildCityIndex(communes: Commune[]): Record<string, Commune> {
   return idx;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function enrichGeoJSON(
+export function computeFeatureState(
+  c: Commune | undefined,
   computed: ComputedData,
-  geojson: any,
   mode: ModeType,
   filter: FilterType,
   year: string,
   showChange: boolean,
   baseYear: string,
   endYear: string,
-): any {
+  scale: Scale | null,
+): { fillColor: string } {
+  if (!c) return { fillColor: "" };
   const ff = FILTER_FIELDS[filter];
+
+  if (showChange) {
+    const ch = getChange(c, mode, filter, baseYear, endYear);
+    const nbField = mode === "rent" ? ff.rentCount : ff.nb;
+    const baseStats = c.years?.[baseYear] as Record<string, unknown> | undefined;
+    const endStats = c.years?.[endYear] as Record<string, unknown> | undefined;
+    const nbBase = nbField && baseStats ? (baseStats[nbField] as number ?? 0) : 0;
+    const nbEnd = nbField && endStats ? (endStats[nbField] as number ?? 0) : 0;
+    const hasEnoughData = ch !== null && nbBase >= MIN_SAMPLES_PER_YEAR && nbEnd >= MIN_SAMPLES_PER_YEAR;
+    return { fillColor: hasEnoughData ? changeToColor(ch!.pct, mode, filter, baseYear, endYear, computed.changeScales) : "" };
+  }
+
+  const val = getValue(c, mode, filter, year);
+  return { fillColor: val != null && scale ? valueToColor(val, scale.p4, scale.p96) : "" };
+}
+
+export interface TooltipData {
+  price: number;
+  nb: number;
+  rent: number;
+  rentCount: number;
+  yield: number;
+  change: number;
+  changeBase: number;
+  changeEnd: number;
+}
+
+export function getTooltipData(
+  c: Commune | undefined,
+  mode: ModeType,
+  filter: FilterType,
+  year: string,
+  showChange: boolean,
+  baseYear: string,
+  endYear: string,
+): TooltipData {
+  const defaults: TooltipData = { price: -1, nb: 0, rent: -1, rentCount: 0, yield: -1, change: -999, changeBase: -1, changeEnd: -1 };
+  if (!c) return defaults;
+  const ff = FILTER_FIELDS[filter];
+
+  if (showChange) {
+    const ch = getChange(c, mode, filter, baseYear, endYear);
+    const nbField = mode === "rent" ? ff.rentCount : ff.nb;
+    const baseStats = c.years?.[baseYear] as Record<string, unknown> | undefined;
+    const endStats = c.years?.[endYear] as Record<string, unknown> | undefined;
+    const nbBase = nbField && baseStats ? (baseStats[nbField] as number ?? 0) : 0;
+    const nbEnd = nbField && endStats ? (endStats[nbField] as number ?? 0) : 0;
+    const hasEnoughData = ch !== null && nbBase >= MIN_SAMPLES_PER_YEAR && nbEnd >= MIN_SAMPLES_PER_YEAR;
+    return {
+      ...defaults,
+      change: hasEnoughData ? ch!.pct : -999,
+      changeBase: hasEnoughData ? ch!.base : -1,
+      changeEnd: hasEnoughData ? ch!.end : -1,
+    };
+  }
+
+  const val = getValue(c, mode, filter, year);
+  const s = getStats(c, year);
+  if (mode === "price") {
+    return { ...defaults, price: val ?? -1, nb: s ? ((s as Record<string, unknown>)[ff.nb] as number ?? 0) : 0 };
+  } else if (mode === "rent") {
+    return { ...defaults, rent: val ?? -1, rentCount: val != null ? ((s as Record<string, unknown>)?.[ff.rentCount!] as number ?? 0) : 0 };
+  } else {
+    return {
+      ...defaults,
+      yield: val ?? -1,
+      price: val != null ? ((s as Record<string, unknown>)?.[ff.price] as number ?? -1) : -1,
+      rent: val != null && ff.rent ? ((s as Record<string, unknown>)?.[ff.rent] as number ?? -1) : -1,
+    };
+  }
+}
+
+export function applyAllFeatureStates(
+  map: maplibregl.Map,
+  computed: ComputedData,
+  mode: ModeType,
+  filter: FilterType,
+  year: string,
+  showChange: boolean,
+  baseYear: string,
+  endYear: string,
+): void {
+  map.removeFeatureState({ source: "communes", sourceLayer: "communes" });
   const scale = !showChange ? getScaleForMode(mode, year, filter, computed) : null;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  geojson.features.forEach((f: any) => {
-    const code = String(f.properties.code);
-    const c = computed.cityIndex[code];
-    f.properties.cityName = c?.city_name ?? f.properties.nom ?? "";
-    f.properties.deptCode = c?.dept_code ?? "";
-
-    f.properties.price = -1;
-    f.properties.nb = 0;
-    f.properties.change = -999;
-    f.properties.changeBase = -1;
-    f.properties.changeEnd = -1;
-    f.properties.rent = -1;
-    f.properties.rentCount = 0;
-    f.properties.yield = -1;
-
-    if (showChange) {
-      const ch = c ? getChange(c, mode, filter, baseYear, endYear) : null;
-      const nbField = mode === "rent" ? ff.rentCount : ff.nb;
-      const baseStats = c?.years?.[baseYear] as Record<string, unknown> | undefined;
-      const endStats = c?.years?.[endYear] as Record<string, unknown> | undefined;
-      const nbBase = nbField && baseStats ? (baseStats[nbField] as number ?? 0) : 0;
-      const nbEnd = nbField && endStats ? (endStats[nbField] as number ?? 0) : 0;
-      const hasEnoughData = ch !== null && nbBase >= MIN_SAMPLES_PER_YEAR && nbEnd >= MIN_SAMPLES_PER_YEAR;
-      f.properties.fillColor = hasEnoughData ? changeToColor(ch!.pct, mode, filter, baseYear, endYear, computed.changeScales) : "";
-      f.properties.change = hasEnoughData ? ch!.pct : -999;
-      f.properties.changeBase = hasEnoughData ? ch!.base : -1;
-      f.properties.changeEnd = hasEnoughData ? ch!.end : -1;
-    } else {
-      const val = c ? getValue(c, mode, filter, year) : null;
-      f.properties.fillColor = val != null && scale ? valueToColor(val, scale.p4, scale.p96) : "";
-      if (mode === "price") {
-        f.properties.price = val ?? -1;
-        const s = c ? getStats(c, year) : null;
-        f.properties.nb = s ? (s as Record<string, unknown>)[ff.nb] ?? 0 : 0;
-      } else if (mode === "rent") {
-        f.properties.rent = val ?? -1;
-        const s = c ? getStats(c, year) : null;
-        f.properties.rentCount = val != null ? ((s as Record<string, unknown>)?.[ff.rentCount!] ?? 0) : 0;
-      } else {
-        f.properties.yield = val ?? -1;
-        const s = c ? getStats(c, year) : null;
-        f.properties.price = val != null ? ((s as Record<string, unknown>)?.[ff.price] ?? -1) : -1;
-        f.properties.rent = val != null && ff.rent ? ((s as Record<string, unknown>)?.[ff.rent] ?? -1) : -1;
-      }
+  for (const [code, c] of Object.entries(computed.cityIndex)) {
+    const state = computeFeatureState(c, computed, mode, filter, year, showChange, baseYear, endYear, scale);
+    if (state.fillColor) {
+      map.setFeatureState(
+        { source: "communes", sourceLayer: "communes", id: code },
+        state,
+      );
     }
-  });
-  return geojson;
+  }
 }

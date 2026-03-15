@@ -419,3 +419,32 @@ with open('public/cities.json', 'w', encoding='utf-8') as f:
     json.dump(output, f, ensure_ascii=False, separators=(',', ':'))
 
 print(f"cities.json generated: {nb_communes} cities ({nb_loyer_only} rent-only), years: {years_sorted}")
+
+# ── Generate PMTiles ────────────────────────────────────────────────────────
+
+import subprocess, tempfile, urllib.request, os
+
+def generate_pmtiles():
+    url = "https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/communes-version-simplifiee.geojson"
+    out = "public/communes.pmtiles"
+    with tempfile.NamedTemporaryFile(suffix=".geojson", delete=False) as tmp:
+        print("Downloading communes GeoJSON...")
+        urllib.request.urlretrieve(url, tmp.name)
+        print("Generating PMTiles...")
+        subprocess.run([
+            "tippecanoe",
+            "-o", out,
+            "-Z", "4", "-z", "12",
+            "-l", "communes",
+            "--no-feature-limit",
+            "--no-tile-size-limit",
+            "--coalesce-densest-as-needed",
+            "--extend-zooms-if-still-dropping",
+            "--force",
+            tmp.name,
+        ], check=True)
+        os.unlink(tmp.name)
+    print(f"Done: {os.path.getsize(out) / 1024 / 1024:.1f} MB")
+
+if __name__ == "__main__":
+    generate_pmtiles()

@@ -7,8 +7,10 @@ import {
   valueToColor,
   changeToColor,
   buildCityIndex,
-  enrichGeoJSON,
+  computeFeatureState,
+  getTooltipData,
 } from "../data";
+import { getScaleForMode } from "../config";
 
 const [communeA, communeB, communeC, communeD] = TEST_COMMUNES;
 
@@ -193,57 +195,70 @@ describe("buildCityIndex", () => {
   });
 });
 
-// ── enrichGeoJSON ───────────────────────────────────
+// ── computeFeatureState ─────────────────────────────
 
-describe("enrichGeoJSON", () => {
-  function makeGeo(codes: string[]) {
-    return {
-      features: codes.map((code) => ({
-        properties: { code, nom: `Nom-${code}` },
-      })),
-    };
-  }
-
-  it("value mode: sets fillColor, price, nb", () => {
-    const geo = makeGeo(["01001"]);
-    enrichGeoJSON(computed, geo, "price", "residential", "2020", false, "", "");
-    const p = geo.features[0].properties as any;
-    expect(p.price).toBe(2000);
-    expect(p.nb).toBe(50);
-    expect(p.fillColor).toMatch(/^hsl\(/);
+describe("computeFeatureState", () => {
+  it("value mode: returns fillColor for known city", () => {
+    const scale = getScaleForMode("price", "2020", "residential", computed);
+    const state = computeFeatureState(communeA, computed, "price", "residential", "2020", false, "", "", scale);
+    expect(state.fillColor).toMatch(/^hsl\(/);
   });
 
-  it("unknown city code → defaults (price: -1, fillColor: '')", () => {
-    const geo = makeGeo(["00000"]);
-    enrichGeoJSON(computed, geo, "price", "residential", "2020", false, "", "");
-    const p = geo.features[0].properties as any;
-    expect(p.price).toBe(-1);
-    expect(p.fillColor).toBe("");
+  it("unknown city → fillColor empty", () => {
+    const scale = getScaleForMode("price", "2020", "residential", computed);
+    const state = computeFeatureState(undefined, computed, "price", "residential", "2020", false, "", "", scale);
+    expect(state.fillColor).toBe("");
   });
 
-  it("change mode: sets change, changeBase, changeEnd", () => {
-    const geo = makeGeo(["01001"]);
-    enrichGeoJSON(computed, geo, "price", "residential", "all", true, "2020", "2023");
-    const p = geo.features[0].properties as any;
-    expect(p.change).toBeCloseTo(30, 0);
-    expect(p.changeBase).toBe(2000);
-    expect(p.changeEnd).toBe(2600);
-    expect(p.fillColor).toMatch(/^hsl\(/);
+  it("change mode: returns fillColor for sufficient data", () => {
+    const state = computeFeatureState(communeA, computed, "price", "residential", "all", true, "2020", "2023", null);
+    expect(state.fillColor).toMatch(/^hsl\(/);
   });
 
-  it("change + insufficient data → change: -999, fillColor: ''", () => {
+  it("change mode + insufficient data → fillColor empty", () => {
     // communeC (99999) has count=10 in 2022, below MIN_SAMPLES_PER_YEAR=15
-    const geo = makeGeo(["99999"]);
-    enrichGeoJSON(computed, geo, "price", "residential", "all", true, "2020", "2022");
-    const p = geo.features[0].properties as any;
-    expect(p.change).toBe(-999);
-    expect(p.fillColor).toBe("");
+    const state = computeFeatureState(communeC, computed, "price", "residential", "all", true, "2020", "2022", null);
+    expect(state.fillColor).toBe("");
+  });
+});
+
+// ── getTooltipData ──────────────────────────────────
+
+describe("getTooltipData", () => {
+  it("price mode: returns price and nb", () => {
+    const td = getTooltipData(communeA, "price", "residential", "2020", false, "", "");
+    expect(td.price).toBe(2000);
+    expect(td.nb).toBe(50);
   });
 
-  it("empty features → no crash, returns same ref", () => {
-    const geo = { features: [] };
-    const result = enrichGeoJSON(computed, geo, "price", "residential", "2020", false, "", "");
-    expect(result).toBe(geo);
-    expect(result.features).toHaveLength(0);
+  it("rent mode: returns rent and rentCount", () => {
+    const td = getTooltipData(communeA, "rent", "residential", "2020", false, "", "");
+    expect(td.rent).toBe(10);
+    expect(td.rentCount).toBe(12);
+  });
+
+  it("yield mode: returns yield, price, rent", () => {
+    const td = getTooltipData(communeA, "yield", "residential", "2020", false, "", "");
+    expect(td.yield).toBe(6.0);
+    expect(td.price).toBe(2000);
+    expect(td.rent).toBe(10);
+  });
+
+  it("change mode: returns change, changeBase, changeEnd", () => {
+    const td = getTooltipData(communeA, "price", "residential", "all", true, "2020", "2023");
+    expect(td.change).toBeCloseTo(30, 0);
+    expect(td.changeBase).toBe(2000);
+    expect(td.changeEnd).toBe(2600);
+  });
+
+  it("unknown city → defaults", () => {
+    const td = getTooltipData(undefined, "price", "residential", "2020", false, "", "");
+    expect(td.price).toBe(-1);
+    expect(td.nb).toBe(0);
+  });
+
+  it("change + insufficient data → change: -999", () => {
+    const td = getTooltipData(communeC, "price", "residential", "all", true, "2020", "2022");
+    expect(td.change).toBe(-999);
   });
 });

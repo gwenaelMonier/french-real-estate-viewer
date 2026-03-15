@@ -23,6 +23,7 @@ process.py      — DuckDB pipeline (DVF + rents → communes.js)
 ## Setup
 
 ```bash
+sudo apt install tippecanoe
 sudo apt install python3.12-venv
 python3 -m venv .venv
 .venv/bin/pip install duckdb

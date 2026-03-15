@@ -1,5 +1,16 @@
 # Changelog — French real estate viewer
 
+## 3.0.0 — PMTiles migration
+
+- **Replaced `cities.json` with PMTiles vector tiles**
+- Added `pmtiles` dependency and registered the `pmtiles://` protocol
+- Geometries loaded on demand over the network (no more monolithic JS file)
+- `tilesLoading` state to manage MapLibre source initialization
+- Tile generation via `tippecanoe` (documented in README)
+- `process.py` now outputs `cities.pmtiles` alongside the data JSON
+
+---
+
 ## 2.5.0 — Progress bar
 
 - Detailed progress bar during data loading

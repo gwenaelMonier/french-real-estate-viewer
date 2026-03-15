@@ -1,6 +1,14 @@
 # Changelog — French real estate viewer
 
-## 2.4.0 — Loading state (archive/26-loading)
+## 2.5.0 — Progress bar
+
+- Detailed progress bar during data loading
+- Load split into chunks for granular progress tracking
+- Better visual feedback during initialization on large datasets
+
+---
+
+## 2.4.0 — Loading state
 
 - `DataContext` exposes a `loading` state while fetching `cities.json`
 - Visual indicator shown until data is available

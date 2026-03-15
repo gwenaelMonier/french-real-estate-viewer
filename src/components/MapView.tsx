@@ -101,7 +101,7 @@ mapInstanceRef.current = map;
                   ["get", "fillColor"],
                   "rgba(0,0,0,0)",
                 ],
-                "fill-opacity": 0.45,
+                "fill-opacity": 0,
               },
             },
             labelLayerId,
@@ -115,14 +115,18 @@ mapInstanceRef.current = map;
               paint: {
                 "line-color": "#888",
                 "line-width": 0.3,
-                "line-opacity": 0.15,
+                "line-opacity": 0,
               },
             },
             labelLayerId,
           );
 
           sourceReadyRef.current = true;
-          map.once("idle", () => setTilesLoading(false));
+          map.once("idle", () => {
+            map.setPaintProperty("communes-fill", "fill-opacity", 0.45);
+            map.setPaintProperty("communes-line", "line-opacity", 0.15);
+            setTilesLoading(false);
+          });
 
           map.on("mousemove", "communes-fill", (e) => {
             if (!e.features?.[0]) return;
@@ -170,6 +174,8 @@ mapInstanceRef.current = map;
     if (!source) return;
 
     setTilesLoading(true);
+    map.setPaintProperty("communes-fill", "fill-opacity", 0);
+    map.setPaintProperty("communes-line", "line-opacity", 0);
     enrichGeoJSON(
       computed,
       geojsonCacheRef.current,
@@ -181,7 +187,11 @@ mapInstanceRef.current = map;
       endYear,
     );
     source.setData(geojsonCacheRef.current);
-    map.once("idle", () => setTilesLoading(false));
+    map.once("idle", () => {
+      map.setPaintProperty("communes-fill", "fill-opacity", 0.45);
+      map.setPaintProperty("communes-line", "line-opacity", 0.15);
+      setTilesLoading(false);
+    });
   }, [activeFilter, activeYear, activeMode, showChange, baseYear, endYear]);
 
   return (

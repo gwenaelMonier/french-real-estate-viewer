@@ -485,39 +485,52 @@ body {
 
 /* ── Loading screen ────────────────────────── */
 .loading-screen {
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100vh;
   font-family: "Plus Jakarta Sans", sans-serif;
   color: #64748b;
   font-size: 14px;
-  gap: 16px;
   background: #f8fafc;
+}
+.loading-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
 }
 .loading-screen::before {
   content: "";
-  width: 32px;
-  height: 32px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #334155;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(30, 41, 59, 0.15);
 }
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.loading-screen::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #1e293b;
+  animation: progress-slide 2s ease-in-out infinite;
 }
 
 /* ── Map tile loader ─────────────────────────── */
 .map-loader {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
   z-index: 1;
-  background: #f8fafc;
+  background: rgba(30, 41, 59, 0.15);
+  overflow: hidden;
   opacity: 1;
   transition: opacity 0.5s ease;
 }
@@ -526,10 +539,14 @@ body {
 }
 .map-loader::before {
   content: "";
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(226, 232, 240, 0.8);
-  border-top-color: #334155;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  position: absolute;
+  inset: 0;
+  background: #1e293b;
+  animation: progress-slide 2s ease-in-out infinite;
+  transform-origin: left;
+}
+@keyframes progress-slide {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(0); }
+  100% { transform: translateX(100%); }
 }

@@ -42,6 +42,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  if (!data) return <div className="loading-screen">Chargement…</div>;
+  if (!data) return <div className="loading-screen"><span className="loading-label"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21V14h6v7"/></svg>Chargement…</span></div>;
   return <DataContext.Provider value={data}>{children}</DataContext.Provider>;
 }

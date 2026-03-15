@@ -4,6 +4,7 @@ import maplibregl from "maplibre-gl";
 import type { FilterType, ModeType } from "../types";
 import { getModeConfig, ARROW_DARK } from "../config";
 import { enrichGeoJSON } from "../data";
+import { useData } from "../context/DataContext";
 
 interface Props {
   activeFilter: FilterType;
@@ -28,6 +29,7 @@ export default function MapView({
   onMapReady,
 }: Props) {
   const { t, i18n } = useTranslation();
+  const { computed } = useData();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const popupInstanceRef = useRef<maplibregl.Popup | null>(null);
@@ -36,8 +38,8 @@ export default function MapView({
   const sourceReadyRef = useRef(false);
 
   // Keep a ref to current state for tooltip closure
-  const stateRef = useRef({ activeFilter, activeYear, activeMode, showChange, baseYear, endYear, t, locale: i18n.language });
-  stateRef.current = { activeFilter, activeYear, activeMode, showChange, baseYear, endYear, t, locale: i18n.language };
+  const stateRef = useRef({ activeFilter, activeYear, activeMode, showChange, baseYear, endYear, t, locale: i18n.language, computed });
+  stateRef.current = { activeFilter, activeYear, activeMode, showChange, baseYear, endYear, t, locale: i18n.language, computed };
 
   // Init map once
   useEffect(() => {
@@ -67,6 +69,7 @@ mapInstanceRef.current = map;
         .then((geojson) => {
           const st = stateRef.current;
           geojsonCacheRef.current = enrichGeoJSON(
+            stateRef.current.computed,
             geojson,
             st.activeMode,
             st.activeFilter,
@@ -125,7 +128,7 @@ mapInstanceRef.current = map;
             if (!p.cityName) return;
             map.getCanvas().style.cursor = "pointer";
             const st = stateRef.current;
-            const cfg = getModeConfig(st.t, st.locale)[st.activeMode];
+            const cfg = getModeConfig(st.t, st.locale, st.computed)[st.activeMode];
             let html: string;
             if (st.showChange && (p.change as number) > -999) {
               const sign = (p.change as number) >= 0 ? "+" : "";
@@ -165,6 +168,7 @@ mapInstanceRef.current = map;
     if (!source) return;
 
     enrichGeoJSON(
+      computed,
       geojsonCacheRef.current,
       activeMode,
       activeFilter,

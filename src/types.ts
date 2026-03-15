@@ -26,3 +26,13 @@ export interface Commune extends YearData {
 
 export type FilterType = "residential" | "house" | "apt" | "land";
 export type ModeType = "price" | "rent" | "yield";
+
+import type { Scale } from "./config";
+
+export interface ComputedData {
+  cityIndex: Record<string, Commune>;
+  scales: Record<string, Scale>;
+  rentScales: Record<string, Scale>;
+  yieldScales: Record<string, Scale>;
+  changeScales: Record<string, Scale>;
+}

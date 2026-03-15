@@ -1,17 +1,21 @@
 import { describe, it, expect } from "vitest";
-import { TEST_COMMUNES } from "./fixtures";
+import { TEST_COMMUNES, TEST_YEARS } from "./fixtures";
 import {
   getStats,
   getValue,
   getChange,
   valueToColor,
   changeToColor,
-  cityIndex,
+  buildCityIndex,
   enrichGeoJSON,
 } from "../data";
-import { changeScales } from "../config";
+import { computeScales } from "../config";
 
 const [communeA, communeB, communeC, communeD] = TEST_COMMUNES;
+
+const { scales, rentScales, yieldScales, changeScales } = computeScales(TEST_COMMUNES, TEST_YEARS);
+const cityIndex = buildCityIndex(TEST_COMMUNES);
+const computed = { cityIndex, scales, rentScales, yieldScales, changeScales };
 
 // ── getStats ────────────────────────────────────────
 
@@ -148,25 +152,24 @@ describe("valueToColor", () => {
 
 describe("changeToColor", () => {
   it("known scale key → valid HSL string", () => {
-    // Find an existing key from changeScales
     const keys = Object.keys(changeScales);
     expect(keys.length).toBeGreaterThan(0);
     const key = keys[0];
     const [baseYear, endYear, mode, filter] = key.split("_");
-    const color = changeToColor(0, mode as any, filter as any, baseYear, endYear);
+    const color = changeToColor(0, mode as any, filter as any, baseYear, endYear, changeScales);
     expect(color).toMatch(/^hsl\(\d+, 80%, 45%\)$/);
   });
 
   it("unknown key → empty string", () => {
-    expect(changeToColor(10, "price", "residential", "1900", "1901")).toBe("");
+    expect(changeToColor(10, "price", "residential", "1900", "1901", changeScales)).toBe("");
   });
 
   it("symmetric hues for ± same magnitude", () => {
     const keys = Object.keys(changeScales);
     const key = keys[0];
     const [baseYear, endYear, mode, filter] = key.split("_");
-    const pos = changeToColor(5, mode as any, filter as any, baseYear, endYear);
-    const neg = changeToColor(-5, mode as any, filter as any, baseYear, endYear);
+    const pos = changeToColor(5, mode as any, filter as any, baseYear, endYear, changeScales);
+    const neg = changeToColor(-5, mode as any, filter as any, baseYear, endYear, changeScales);
     // Both should be valid colors
     expect(pos).toMatch(/^hsl\(\d+, 80%, 45%\)$/);
     expect(neg).toMatch(/^hsl\(\d+, 80%, 45%\)$/);
@@ -179,7 +182,7 @@ describe("changeToColor", () => {
 
 // ── cityIndex ───────────────────────────────────────
 
-describe("cityIndex", () => {
+describe("buildCityIndex", () => {
   it("contains all fixtures keyed by city_code", () => {
     for (const c of TEST_COMMUNES) {
       expect(cityIndex[c.city_code]).toBeDefined();
@@ -205,7 +208,7 @@ describe("enrichGeoJSON", () => {
 
   it("value mode: sets fillColor, price, nb", () => {
     const geo = makeGeo(["01001"]);
-    enrichGeoJSON(geo, "price", "residential", "2020", false, "", "");
+    enrichGeoJSON(computed, geo, "price", "residential", "2020", false, "", "");
     const p = geo.features[0].properties as any;
     expect(p.price).toBe(2000);
     expect(p.nb).toBe(50);
@@ -214,7 +217,7 @@ describe("enrichGeoJSON", () => {
 
   it("unknown city code → defaults (price: -1, fillColor: '')", () => {
     const geo = makeGeo(["00000"]);
-    enrichGeoJSON(geo, "price", "residential", "2020", false, "", "");
+    enrichGeoJSON(computed, geo, "price", "residential", "2020", false, "", "");
     const p = geo.features[0].properties as any;
     expect(p.price).toBe(-1);
     expect(p.fillColor).toBe("");
@@ -222,7 +225,7 @@ describe("enrichGeoJSON", () => {
 
   it("change mode: sets change, changeBase, changeEnd", () => {
     const geo = makeGeo(["01001"]);
-    enrichGeoJSON(geo, "price", "residential", "all", true, "2020", "2023");
+    enrichGeoJSON(computed, geo, "price", "residential", "all", true, "2020", "2023");
     const p = geo.features[0].properties as any;
     expect(p.change).toBeCloseTo(30, 0);
     expect(p.changeBase).toBe(2000);
@@ -233,7 +236,7 @@ describe("enrichGeoJSON", () => {
   it("change + insufficient data → change: -999, fillColor: ''", () => {
     // communeC (99999) has count=10 in 2022, below MIN_SAMPLES_PER_YEAR=15
     const geo = makeGeo(["99999"]);
-    enrichGeoJSON(geo, "price", "residential", "all", true, "2020", "2022");
+    enrichGeoJSON(computed, geo, "price", "residential", "all", true, "2020", "2022");
     const p = geo.features[0].properties as any;
     expect(p.change).toBe(-999);
     expect(p.fillColor).toBe("");
@@ -241,7 +244,7 @@ describe("enrichGeoJSON", () => {
 
   it("empty features → no crash, returns same ref", () => {
     const geo = { features: [] };
-    const result = enrichGeoJSON(geo, "price", "residential", "2020", false, "", "");
+    const result = enrichGeoJSON(computed, geo, "price", "residential", "2020", false, "", "");
     expect(result).toBe(geo);
     expect(result.features).toHaveLength(0);
   });

@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { getModeConfig, ARROW_DARK, changeScales } from "../config";
+import { getModeConfig, ARROW_DARK } from "../config";
 import type { FilterType, ModeType } from "../types";
+import { useData } from "../context/DataContext";
 
 interface Props {
   activeMode: ModeType;
@@ -20,11 +21,12 @@ export default function Legend({
   endYear,
 }: Props) {
   const { t, i18n } = useTranslation();
-  const MODE_CONFIG = getModeConfig(t, i18n.language);
+  const { computed } = useData();
+  const MODE_CONFIG = getModeConfig(t, i18n.language, computed);
 
   if (showChange) {
     const { modeLabel } = MODE_CONFIG[activeMode];
-    const scale = changeScales[`${baseYear}_${endYear}_${activeMode}_${activeFilter}`];
+    const scale = computed.changeScales[`${baseYear}_${endYear}_${activeMode}_${activeFilter}`];
     if (!scale) return null;
     const range = Math.max(Math.abs(scale.p4), Math.abs(scale.p96));
 

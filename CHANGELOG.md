@@ -1,5 +1,14 @@
 # Changelog — French real estate viewer
 
+## 2.3.0 — DataContext and dynamic loading
+
+- **`DataProvider`**: data is now fetched at runtime (`fetch`) instead of being injected globally
+- `DataContext.tsx` centralizes `cities`, `years`, `computed`
+- `App` wrapped in `DataProvider`
+- Removed `window.*` global variables
+
+---
+
 ## 2.2.0 — Unit tests
 
 - Set up **Vitest** as the test runner

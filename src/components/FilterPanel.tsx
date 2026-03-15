@@ -2,6 +2,7 @@ import { Fragment, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import type { FilterType, ModeType } from "../types";
 import { ARROW_DARK } from "../config";
+import { useData } from "../context/DataContext";
 
 interface Props {
   activeMode: ModeType;
@@ -63,6 +64,7 @@ export default function FilterPanel({
   onEndYearChange,
 }: Props) {
   const { t } = useTranslation();
+  const { years } = useData();
 
   const modes: [ModeType, string][] = [
     ["price", t("modePrice")],
@@ -84,9 +86,9 @@ export default function FilterPanel({
           ["land", t("filterLand")],
         ];
 
-  const n = YEARS.length - 1;
-  const baseIdx = YEARS.map(String).indexOf(baseYear);
-  const endIdx = YEARS.map(String).indexOf(endYear);
+  const n = years.length - 1;
+  const baseIdx = years.map(String).indexOf(baseYear);
+  const endIdx = years.map(String).indexOf(endYear);
 
   const handleBaseSlider = (e: ChangeEvent<HTMLInputElement>) => {
     const idx = parseInt(e.target.value);
@@ -94,7 +96,7 @@ export default function FilterPanel({
       e.target.value = String(endIdx - 1);
       return;
     }
-    onBaseYearChange(String(YEARS[idx]));
+    onBaseYearChange(String(years[idx]));
   };
 
   const handleEndSlider = (e: ChangeEvent<HTMLInputElement>) => {
@@ -103,7 +105,7 @@ export default function FilterPanel({
       e.target.value = String(baseIdx + 1);
       return;
     }
-    onEndYearChange(String(YEARS[idx]));
+    onEndYearChange(String(years[idx]));
   };
 
   return (
@@ -160,7 +162,7 @@ export default function FilterPanel({
                 onChange={(e) => onYearChange(e.target.value)}
               >
                 <option value="all">{t("yearAll")}</option>
-                {YEARS.map((y) => (
+                {years.map((y) => (
                   <option key={y} value={y}>
                     {y}
                   </option>
@@ -211,7 +213,7 @@ export default function FilterPanel({
               />
             </div>
             <div className="year-slider-ticks">
-              {YEARS.map((y) => (
+              {years.map((y) => (
                 <span key={y}>{y}</span>
               ))}
             </div>

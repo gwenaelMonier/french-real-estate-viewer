@@ -1,20 +1,22 @@
 import { useState, useCallback, useRef } from "react";
 import type maplibregl from "maplibre-gl";
 import type { FilterType, ModeType } from "./types";
+import { useData } from "./context/DataContext";
 import MapView from "./components/MapView";
 import Legend from "./components/Legend";
 import FilterPanel from "./components/FilterPanel";
 import Search from "./components/Search";
 import LanguageToggle from "./components/LanguageToggle";
 
-const LATEST_YEAR = String(Math.max(...YEARS));
-
 export default function App() {
+  const { years } = useData();
+  const LATEST_YEAR = String(Math.max(...years));
+
   const [activeFilter, setActiveFilter] = useState<FilterType>("residential");
   const [activeYear, setActiveYear] = useState("all");
   const [activeMode, setActiveMode] = useState<ModeType>("price");
   const [showChange, setShowChange] = useState(false);
-  const [baseYear, setBaseYear] = useState(String(YEARS[0]));
+  const [baseYear, setBaseYear] = useState(String(years[0]));
   const [endYear, setEndYear] = useState(LATEST_YEAR);
 
   const mapRef = useRef<maplibregl.Map | null>(null);

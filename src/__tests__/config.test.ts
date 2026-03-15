@@ -1,12 +1,15 @@
 import { describe, it, expect } from "vitest";
+import { TEST_COMMUNES, TEST_YEARS } from "./fixtures";
 import {
   FILTER_FIELDS,
-  scales,
-  rentScales,
-  yieldScales,
-  changeScales,
+  computeScales,
   getScaleForMode,
 } from "../config";
+import { buildCityIndex } from "../data";
+
+const { scales, rentScales, yieldScales, changeScales } = computeScales(TEST_COMMUNES, TEST_YEARS);
+const cityIndex = buildCityIndex(TEST_COMMUNES);
+const computed = { cityIndex, scales, rentScales, yieldScales, changeScales };
 
 describe("FILTER_FIELDS", () => {
   it("has 4 keys", () => {
@@ -51,15 +54,15 @@ describe("yieldScales", () => {
 
 describe("getScaleForMode", () => {
   it("price → scales", () => {
-    expect(getScaleForMode("price", "all", "residential")).toBe(scales["all_residential"]);
+    expect(getScaleForMode("price", "all", "residential", computed)).toBe(scales["all_residential"]);
   });
 
   it("rent + land → falls back to residential", () => {
-    expect(getScaleForMode("rent", "all", "land")).toBe(rentScales["all_residential"]);
+    expect(getScaleForMode("rent", "all", "land", computed)).toBe(rentScales["all_residential"]);
   });
 
   it("yield → yieldScales", () => {
-    expect(getScaleForMode("yield", "all", "residential")).toBe(yieldScales["all_residential"]);
+    expect(getScaleForMode("yield", "all", "residential", computed)).toBe(yieldScales["all_residential"]);
   });
 });
 

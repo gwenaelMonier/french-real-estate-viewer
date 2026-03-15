@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type maplibregl from "maplibre-gl";
 import type { Commune } from "../types";
 import { normalize } from "../utils";
+import { useData } from "../context/DataContext";
 
 const MAX_RESULTS = 8;
 
@@ -12,6 +13,7 @@ interface Props {
 
 export default function Search({ mapRef }: Props) {
   const { t } = useTranslation();
+  const { communes } = useData();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Commune[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -25,7 +27,7 @@ export default function Search({ mapRef }: Props) {
       setResults([]);
       return;
     }
-    const matches = COMMUNES.filter((c) => normalize(c.city_name).includes(q))
+    const matches = communes.filter((c) => normalize(c.city_name).includes(q))
       .sort((a, b) => {
         const aStarts = normalize(a.city_name).startsWith(q);
         const bStarts = normalize(b.city_name).startsWith(q);
@@ -35,7 +37,7 @@ export default function Search({ mapRef }: Props) {
       .slice(0, MAX_RESULTS);
     setResults(matches);
     setShowResults(matches.length > 0);
-  }, []);
+  }, [communes]);
 
   const handleSelect = useCallback(
     (c: Commune) => {

@@ -1,5 +1,5 @@
-import type { Commune, FilterType, ModeType, YearData } from "./types";
-import { FILTER_FIELDS, getScaleForMode, changeScales } from "./config";
+import type { Commune, ComputedData, FilterType, ModeType, YearData } from "./types";
+import { FILTER_FIELDS, getScaleForMode, type Scale } from "./config";
 
 const MIN_SAMPLES_PER_YEAR = 15;
 
@@ -63,6 +63,7 @@ export function changeToColor(
   filter: FilterType,
   baseYear: string,
   endYear: string,
+  changeScales: Record<string, Scale>,
 ): string {
   const scaleKey = `${baseYear}_${endYear}_${mode}_${filter}`;
   const scale = changeScales[scaleKey];
@@ -71,13 +72,15 @@ export function changeToColor(
   return valueToColor(pct, -range, range);
 }
 
-export const cityIndex: Record<string, Commune> = {};
-COMMUNES.forEach((c) => {
-  cityIndex[c.city_code] = c;
-});
+export function buildCityIndex(communes: Commune[]): Record<string, Commune> {
+  const idx: Record<string, Commune> = {};
+  communes.forEach((c) => { idx[c.city_code] = c; });
+  return idx;
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function enrichGeoJSON(
+  computed: ComputedData,
   geojson: any,
   mode: ModeType,
   filter: FilterType,
@@ -87,12 +90,12 @@ export function enrichGeoJSON(
   endYear: string,
 ): any {
   const ff = FILTER_FIELDS[filter];
-  const scale = !showChange ? getScaleForMode(mode, year, filter) : null;
+  const scale = !showChange ? getScaleForMode(mode, year, filter, computed) : null;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   geojson.features.forEach((f: any) => {
     const code = String(f.properties.code);
-    const c = cityIndex[code];
+    const c = computed.cityIndex[code];
     f.properties.cityName = c?.city_name ?? f.properties.nom ?? "";
     f.properties.deptCode = c?.dept_code ?? "";
 
@@ -113,7 +116,7 @@ export function enrichGeoJSON(
       const nbBase = nbField && baseStats ? (baseStats[nbField] as number ?? 0) : 0;
       const nbEnd = nbField && endStats ? (endStats[nbField] as number ?? 0) : 0;
       const hasEnoughData = ch !== null && nbBase >= MIN_SAMPLES_PER_YEAR && nbEnd >= MIN_SAMPLES_PER_YEAR;
-      f.properties.fillColor = hasEnoughData ? changeToColor(ch!.pct, mode, filter, baseYear, endYear) : "";
+      f.properties.fillColor = hasEnoughData ? changeToColor(ch!.pct, mode, filter, baseYear, endYear, computed.changeScales) : "";
       f.properties.change = hasEnoughData ? ch!.pct : -999;
       f.properties.changeBase = hasEnoughData ? ch!.base : -1;
       f.properties.changeEnd = hasEnoughData ? ch!.end : -1;

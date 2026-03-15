@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TEST_COMMUNES, TEST_YEARS } from "./fixtures";
+import { TEST_COMMUNES, TEST_COMPUTED } from "./fixtures";
 import {
   getStats,
   getValue,
@@ -9,13 +9,11 @@ import {
   buildCityIndex,
   enrichGeoJSON,
 } from "../data";
-import { computeScales } from "../config";
 
 const [communeA, communeB, communeC, communeD] = TEST_COMMUNES;
 
-const { scales, rentScales, yieldScales, changeScales } = computeScales(TEST_COMMUNES, TEST_YEARS);
-const cityIndex = buildCityIndex(TEST_COMMUNES);
-const computed = { cityIndex, scales, rentScales, yieldScales, changeScales };
+const { changeScales } = TEST_COMPUTED;
+const computed = TEST_COMPUTED;
 
 // ── getStats ────────────────────────────────────────
 
@@ -185,13 +183,13 @@ describe("changeToColor", () => {
 describe("buildCityIndex", () => {
   it("contains all fixtures keyed by city_code", () => {
     for (const c of TEST_COMMUNES) {
-      expect(cityIndex[c.city_code]).toBeDefined();
+      expect(computed.cityIndex[c.city_code]).toBeDefined();
     }
   });
 
   it("lookup returns the correct object", () => {
-    expect(cityIndex["01001"]!.city_name).toBe("Ville-A");
-    expect(cityIndex["75056"]!.city_name).toBe("Paris");
+    expect(computed.cityIndex["01001"]!.city_name).toBe("Ville-A");
+    expect(computed.cityIndex["75056"]!.city_name).toBe("Paris");
   });
 });
 

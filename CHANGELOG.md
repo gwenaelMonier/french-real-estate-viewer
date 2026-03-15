@@ -1,5 +1,13 @@
 # Changelog — French real estate viewer
 
+## 2.4.0 — Loading state (archive/26-loading)
+
+- `DataContext` exposes a `loading` state while fetching `cities.json`
+- Visual indicator shown until data is available
+- Improved user experience on first load
+
+---
+
 ## 2.3.0 — DataContext and dynamic loading
 
 - **`DataProvider`**: data is now fetched at runtime (`fetch`) instead of being injected globally

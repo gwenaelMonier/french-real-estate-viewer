@@ -235,91 +235,187 @@ GLOBAL_COLS = ['city_code', 'city_name', 'dept_code',
                'median_sqm_land', 'count_land', 'lat', 'lon']
 
 all_years = set()
-nb_communes = 0
+communes_list = []
+output_codes = set()
 
-with open('public/cities.js', 'w', encoding='utf-8') as f:
-    f.write('const COMMUNES = [\n')
-    first = True
-    output_codes = set()
-    while True:
-        row = cursor.fetchone()
-        if row is None:
-            break
-        if not first:
-            f.write(',\n')
-        city = dict(zip(GLOBAL_COLS, row[:13]))
-        years_data = json.loads(row[13])
-        terrain_years_data = json.loads(row[14])
-        # Merge terrain year stats into the years dict
-        for yr, stats in terrain_years_data.items():
-            if yr in years_data:
-                years_data[yr].update(stats)
-            else:
-                years_data[yr] = stats
+while True:
+    row = cursor.fetchone()
+    if row is None:
+        break
+    city = dict(zip(GLOBAL_COLS, row[:13]))
+    years_data = json.loads(row[13])
+    terrain_years_data = json.loads(row[14])
+    for yr, stats in terrain_years_data.items():
+        if yr in years_data:
+            years_data[yr].update(stats)
+        else:
+            years_data[yr] = stats
 
-        # Inject rent data
-        code = city['city_code']
-        lg = global_rent.get(code, {})
-        city['rent_residential']    = lg.get('rent_residential')
-        city['rent_house']          = lg.get('rent_house')
-        city['rent_apt']            = lg.get('rent_apt')
-        city['rent_count_residential'] = lg.get('rent_count_residential')
-        city['rent_count_house']    = lg.get('rent_count_house')
-        city['rent_count_apt']      = lg.get('rent_count_apt')
+    code = city['city_code']
+    lg = global_rent.get(code, {})
+    city['rent_residential']    = lg.get('rent_residential')
+    city['rent_house']          = lg.get('rent_house')
+    city['rent_apt']            = lg.get('rent_apt')
+    city['rent_count_residential'] = lg.get('rent_count_residential')
+    city['rent_count_house']    = lg.get('rent_count_house')
+    city['rent_count_apt']      = lg.get('rent_count_apt')
 
-        ly = rent_data.get(code, {})
-        for yr_int, fields in ly.items():
-            yr_str = str(yr_int)
-            if yr_str in years_data:
-                years_data[yr_str].update(fields)
-            else:
-                years_data[yr_str] = fields.copy()
+    ly = rent_data.get(code, {})
+    for yr_int, fields in ly.items():
+        yr_str = str(yr_int)
+        if yr_str in years_data:
+            years_data[yr_str].update(fields)
+        else:
+            years_data[yr_str] = fields.copy()
 
-        all_years.update(years_data.keys())
-        city['years'] = years_data
-        json.dump(city, f, ensure_ascii=False, separators=(',', ':'))
-        output_codes.add(code)
-        first = False
-        nb_communes += 1
+    all_years.update(years_data.keys())
+    city['years'] = years_data
+    communes_list.append(city)
+    output_codes.add(code)
 
-    # Cities with rent data only (not enough DVF transactions)
-    nb_loyer_only = 0
-    for code, by_year in rent_data.items():
-        if code in output_codes:
+# Cities with rent data only (not enough DVF transactions)
+nb_loyer_only = 0
+for code, by_year in rent_data.items():
+    if code in output_codes:
+        continue
+    meta = rent_meta.get(code, {})
+    if not meta:
+        continue
+    lg = global_rent.get(code, {})
+    years_data = {}
+    for yr_int, fields in by_year.items():
+        years_data[str(yr_int)] = fields.copy()
+    city = {
+        'city_code': code,
+        'city_name': meta['city_name'],
+        'dept_code': meta['dept_code'],
+        'median_sqm': None, 'median_sqm_house': None, 'median_sqm_apt': None,
+        'count': None, 'count_house': None, 'count_apt': None,
+        'median_sqm_land': None, 'count_land': None,
+        'lat': None, 'lon': None,
+        'rent_residential':       lg.get('rent_residential'),
+        'rent_house':             lg.get('rent_house'),
+        'rent_apt':               lg.get('rent_apt'),
+        'rent_count_residential': lg.get('rent_count_residential'),
+        'rent_count_house':       lg.get('rent_count_house'),
+        'rent_count_apt':         lg.get('rent_count_apt'),
+        'years': years_data,
+    }
+    communes_list.append(city)
+    all_years.update(years_data.keys())
+    nb_loyer_only += 1
+
+years_sorted = sorted(int(y) for y in all_years)
+nb_communes = len(communes_list)
+
+# ── Pre-compute scales ───────────────────────────────────────────────────────
+
+FILTER_FIELDS = {
+    'residential': {'price': 'median_sqm',       'rent': 'rent_residential'},
+    'house':       {'price': 'median_sqm_house',  'rent': 'rent_house'},
+    'apt':         {'price': 'median_sqm_apt',    'rent': 'rent_apt'},
+    'land':        {'price': 'median_sqm_land',   'rent': None},
+}
+
+import math
+
+def compute_percentiles(values):
+    sorted_vals = sorted(v for v in values if v is not None)
+    if not sorted_vals:
+        return {'p4': 0, 'p96': 0}
+    return {
+        'p4': sorted_vals[math.floor(len(sorted_vals) * 0.04)],
+        'p96': sorted_vals[math.floor(len(sorted_vals) * 0.96)],
+    }
+
+def get_field(obj, field):
+    v = obj.get(field)
+    return v if isinstance(v, (int, float)) else None
+
+year_keys = ['all'] + [str(y) for y in years_sorted]
+
+# Price scales
+scales = {}
+for yr in year_keys:
+    for fk, ff in FILTER_FIELDS.items():
+        vals = []
+        for c in communes_list:
+            s = c if yr == 'all' else (c.get('years') or {}).get(yr, {})
+            vals.append(get_field(s, ff['price']))
+        scales[f'{yr}_{fk}'] = compute_percentiles(vals)
+
+# Rent scales (no land)
+rent_scales = {}
+for yr in year_keys:
+    for fk, ff in FILTER_FIELDS.items():
+        if ff['rent'] is None:
             continue
-        meta = rent_meta.get(code, {})
-        if not meta:
+        vals = []
+        for c in communes_list:
+            s = c if yr == 'all' else (c.get('years') or {}).get(yr, {})
+            vals.append(get_field(s, ff['rent']))
+        rent_scales[f'{yr}_{fk}'] = compute_percentiles(vals)
+
+# Yield scales (no land)
+yield_scales = {}
+for yr in year_keys:
+    for fk, ff in FILTER_FIELDS.items():
+        if ff['rent'] is None:
             continue
-        lg = global_rent.get(code, {})
-        years_data = {}
-        for yr_int, fields in by_year.items():
-            years_data[str(yr_int)] = fields.copy()
-        city = {
-            'city_code': code,
-            'city_name': meta['city_name'],
-            'dept_code': meta['dept_code'],
-            'median_sqm': None, 'median_sqm_house': None, 'median_sqm_apt': None,
-            'count': None, 'count_house': None, 'count_apt': None,
-            'median_sqm_land': None, 'count_land': None,
-            'lat': None, 'lon': None,
-            'rent_residential':       lg.get('rent_residential'),
-            'rent_house':             lg.get('rent_house'),
-            'rent_apt':               lg.get('rent_apt'),
-            'rent_count_residential': lg.get('rent_count_residential'),
-            'rent_count_house':       lg.get('rent_count_house'),
-            'rent_count_apt':         lg.get('rent_count_apt'),
-            'years': years_data,
-        }
-        f.write(',\n')
-        json.dump(city, f, ensure_ascii=False, separators=(',', ':'))
-        all_years.update(years_data.keys())
-        nb_loyer_only += 1
-        nb_communes += 1
+        vals = []
+        for c in communes_list:
+            s = c if yr == 'all' else (c.get('years') or {}).get(yr, {})
+            price = get_field(s, ff['price'])
+            rent = get_field(s, ff['rent'])
+            vals.append((rent * 12 / price) * 100 if price and rent else None)
+        yield_scales[f'{yr}_{fk}'] = compute_percentiles(vals)
 
-    f.write('\n];\n')
-    years_sorted = sorted(int(y) for y in all_years)
-    f.write('const YEARS = ')
-    json.dump(years_sorted, f)
-    f.write(';\n')
+# Change scales
+change_scales = {}
+yr_strs = [str(y) for y in years_sorted]
+modes = [
+    ('price', [(fk, [ff['price']]) for fk, ff in FILTER_FIELDS.items()]),
+    ('rent',  [(fk, [ff['rent']]) for fk, ff in FILTER_FIELDS.items() if ff['rent']]),
+    ('yield', [(fk, [ff['price'], ff['rent']]) for fk, ff in FILTER_FIELDS.items() if ff['rent']]),
+]
+for base_yr in yr_strs:
+    for end_yr in yr_strs:
+        if end_yr <= base_yr:
+            continue
+        for mode_name, filters in modes:
+            for fk, fields in filters:
+                vals = []
+                for c in communes_list:
+                    yrs = c.get('years') or {}
+                    base_data = yrs.get(base_yr, {})
+                    end_data = yrs.get(end_yr, {})
+                    if mode_name == 'yield':
+                        bp = get_field(base_data, fields[0])
+                        br = get_field(base_data, fields[1])
+                        ep = get_field(end_data, fields[0])
+                        er = get_field(end_data, fields[1])
+                        b = (br * 12 / bp) * 100 if bp and br else None
+                        e = (er * 12 / ep) * 100 if ep and er else None
+                    else:
+                        b = get_field(base_data, fields[0])
+                        e = get_field(end_data, fields[0])
+                    vals.append(((e - b) / b) * 100 if b and e else None)
+                change_scales[f'{base_yr}_{end_yr}_{mode_name}_{fk}'] = compute_percentiles(vals)
 
-print(f"cities.js generated: {nb_communes} cities ({nb_loyer_only} rent-only), years: {years_sorted}")
+print(f"Scales computed: {len(scales)} price, {len(rent_scales)} rent, {len(yield_scales)} yield, {len(change_scales)} change")
+
+# ── Write cities.json ────────────────────────────────────────────────────────
+
+output = {
+    'communes': communes_list,
+    'years': years_sorted,
+    'scales': scales,
+    'rentScales': rent_scales,
+    'yieldScales': yield_scales,
+    'changeScales': change_scales,
+}
+
+with open('public/cities.json', 'w', encoding='utf-8') as f:
+    json.dump(output, f, ensure_ascii=False, separators=(',', ':'))
+
+print(f"cities.json generated: {nb_communes} cities ({nb_loyer_only} rent-only), years: {years_sorted}")

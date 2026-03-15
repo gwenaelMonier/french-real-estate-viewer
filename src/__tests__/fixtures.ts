@@ -1,4 +1,6 @@
-import type { Commune } from "../types";
+import type { Commune, ComputedData } from "../types";
+import type { Scale } from "../config";
+import { buildCityIndex } from "../data";
 
 export const TEST_YEARS = [2020, 2021, 2022, 2023];
 
@@ -186,3 +188,134 @@ const communeD: Commune = {
 };
 
 export const TEST_COMMUNES: Commune[] = [communeA, communeB, communeC, communeD];
+
+// Pre-computed scales for the test fixtures above (matches computeScales output exactly)
+const TEST_SCALES: Record<string, Scale> = {
+  "all_residential": { p4: 1500, p96: 10000 },
+  "all_house": { p4: 1800, p96: 2500 },
+  "all_apt": { p4: 2800, p96: 10500 },
+  "all_land": { p4: 100, p96: 150 },
+  "2020_residential": { p4: 2000, p96: 9500 },
+  "2020_house": { p4: 1600, p96: 1600 },
+  "2020_apt": { p4: 2400, p96: 10000 },
+  "2020_land": { p4: 80, p96: 80 },
+  "2021_residential": { p4: 2200, p96: 2200 },
+  "2021_house": { p4: 1700, p96: 1700 },
+  "2021_apt": { p4: 2600, p96: 2600 },
+  "2021_land": { p4: 85, p96: 85 },
+  "2022_residential": { p4: 1500, p96: 2400 },
+  "2022_house": { p4: 1200, p96: 1900 },
+  "2022_apt": { p4: 2800, p96: 2800 },
+  "2022_land": { p4: 90, p96: 90 },
+  "2023_residential": { p4: 2600, p96: 10500 },
+  "2023_house": { p4: 2000, p96: 2000 },
+  "2023_apt": { p4: 3000, p96: 11000 },
+  "2023_land": { p4: 95, p96: 95 },
+};
+
+const TEST_RENT_SCALES: Record<string, Scale> = {
+  "all_residential": { p4: 12, p96: 25 },
+  "all_house": { p4: 10, p96: 11 },
+  "all_apt": { p4: 14, p96: 26 },
+  "2020_residential": { p4: 10, p96: 23 },
+  "2020_house": { p4: 8, p96: 8 },
+  "2020_apt": { p4: 12, p96: 24 },
+  "2021_residential": { p4: 11, p96: 11 },
+  "2021_house": { p4: 9, p96: 9 },
+  "2021_apt": { p4: 13, p96: 13 },
+  "2022_residential": { p4: 12, p96: 12 },
+  "2022_house": { p4: 10, p96: 10 },
+  "2022_apt": { p4: 14, p96: 14 },
+  "2023_residential": { p4: 13, p96: 27 },
+  "2023_house": { p4: 11, p96: 11 },
+  "2023_apt": { p4: 15, p96: 28 },
+};
+
+const TEST_YIELD_SCALES: Record<string, Scale> = {
+  "all_residential": { p4: 3, p96: 6.260869565217392 },
+  "all_house": { p4: 5.28, p96: 6.666666666666667 },
+  "all_apt": { p4: 2.9714285714285715, p96: 6 },
+  "2020_residential": { p4: 2.905263157894737, p96: 6 },
+  "2020_house": { p4: 6, p96: 6 },
+  "2020_apt": { p4: 2.88, p96: 6 },
+  "2021_residential": { p4: 6, p96: 6 },
+  "2021_house": { p4: 6.352941176470588, p96: 6.352941176470588 },
+  "2021_apt": { p4: 6, p96: 6 },
+  "2022_residential": { p4: 6, p96: 6 },
+  "2022_house": { p4: 6.315789473684211, p96: 6.315789473684211 },
+  "2022_apt": { p4: 6, p96: 6 },
+  "2023_residential": { p4: 3.085714285714286, p96: 6 },
+  "2023_house": { p4: 6.6000000000000005, p96: 6.6000000000000005 },
+  "2023_apt": { p4: 3.0545454545454547, p96: 6 },
+};
+
+const TEST_CHANGE_SCALES: Record<string, Scale> = {
+  "2020_2021_price_residential": { p4: 10, p96: 10 },
+  "2020_2021_price_house": { p4: 6.25, p96: 6.25 },
+  "2020_2021_price_apt": { p4: 8.333333333333332, p96: 8.333333333333332 },
+  "2020_2021_price_land": { p4: 6.25, p96: 6.25 },
+  "2020_2021_rent_residential": { p4: 10, p96: 10 },
+  "2020_2021_rent_house": { p4: 12.5, p96: 12.5 },
+  "2020_2021_rent_apt": { p4: 8.333333333333332, p96: 8.333333333333332 },
+  "2020_2021_yield_residential": { p4: 0, p96: 0 },
+  "2020_2021_yield_house": { p4: 5.882352941176464, p96: 5.882352941176464 },
+  "2020_2021_yield_apt": { p4: 0, p96: 0 },
+  "2020_2022_price_residential": { p4: 20, p96: 20 },
+  "2020_2022_price_house": { p4: 18.75, p96: 18.75 },
+  "2020_2022_price_apt": { p4: 16.666666666666664, p96: 16.666666666666664 },
+  "2020_2022_price_land": { p4: 12.5, p96: 12.5 },
+  "2020_2022_rent_residential": { p4: 20, p96: 20 },
+  "2020_2022_rent_house": { p4: 25, p96: 25 },
+  "2020_2022_rent_apt": { p4: 16.666666666666664, p96: 16.666666666666664 },
+  "2020_2022_yield_residential": { p4: 0, p96: 0 },
+  "2020_2022_yield_house": { p4: 5.263157894736844, p96: 5.263157894736844 },
+  "2020_2022_yield_apt": { p4: 0, p96: 0 },
+  "2020_2023_price_residential": { p4: 10.526315789473683, p96: 30 },
+  "2020_2023_price_house": { p4: 25, p96: 25 },
+  "2020_2023_price_apt": { p4: 10, p96: 25 },
+  "2020_2023_price_land": { p4: 18.75, p96: 18.75 },
+  "2020_2023_rent_residential": { p4: 17.391304347826086, p96: 30 },
+  "2020_2023_rent_house": { p4: 37.5, p96: 37.5 },
+  "2020_2023_rent_apt": { p4: 16.666666666666664, p96: 25 },
+  "2020_2023_yield_residential": { p4: 0, p96: 6.211180124223602 },
+  "2020_2023_yield_house": { p4: 10.000000000000009, p96: 10.000000000000009 },
+  "2020_2023_yield_apt": { p4: 0, p96: 6.060606060606069 },
+  "2021_2022_price_residential": { p4: 9.090909090909092, p96: 9.090909090909092 },
+  "2021_2022_price_house": { p4: 11.76470588235294, p96: 11.76470588235294 },
+  "2021_2022_price_apt": { p4: 7.6923076923076925, p96: 7.6923076923076925 },
+  "2021_2022_price_land": { p4: 5.88235294117647, p96: 5.88235294117647 },
+  "2021_2022_rent_residential": { p4: 9.090909090909092, p96: 9.090909090909092 },
+  "2021_2022_rent_house": { p4: 11.11111111111111, p96: 11.11111111111111 },
+  "2021_2022_rent_apt": { p4: 7.6923076923076925, p96: 7.6923076923076925 },
+  "2021_2022_yield_residential": { p4: 0, p96: 0 },
+  "2021_2022_yield_house": { p4: -0.5847953216374197, p96: -0.5847953216374197 },
+  "2021_2022_yield_apt": { p4: 0, p96: 0 },
+  "2021_2023_price_residential": { p4: 18.181818181818183, p96: 18.181818181818183 },
+  "2021_2023_price_house": { p4: 17.647058823529413, p96: 17.647058823529413 },
+  "2021_2023_price_apt": { p4: 15.384615384615385, p96: 15.384615384615385 },
+  "2021_2023_price_land": { p4: 11.76470588235294, p96: 11.76470588235294 },
+  "2021_2023_rent_residential": { p4: 18.181818181818183, p96: 18.181818181818183 },
+  "2021_2023_rent_house": { p4: 22.22222222222222, p96: 22.22222222222222 },
+  "2021_2023_rent_apt": { p4: 15.384615384615385, p96: 15.384615384615385 },
+  "2021_2023_yield_residential": { p4: 0, p96: 0 },
+  "2021_2023_yield_house": { p4: 3.8888888888889035, p96: 3.8888888888889035 },
+  "2021_2023_yield_apt": { p4: 0, p96: 0 },
+  "2022_2023_price_residential": { p4: 8.333333333333332, p96: 8.333333333333332 },
+  "2022_2023_price_house": { p4: 5.263157894736842, p96: 5.263157894736842 },
+  "2022_2023_price_apt": { p4: 7.142857142857142, p96: 7.142857142857142 },
+  "2022_2023_price_land": { p4: 5.555555555555555, p96: 5.555555555555555 },
+  "2022_2023_rent_residential": { p4: 8.333333333333332, p96: 8.333333333333332 },
+  "2022_2023_rent_house": { p4: 10, p96: 10 },
+  "2022_2023_rent_apt": { p4: 7.142857142857142, p96: 7.142857142857142 },
+  "2022_2023_yield_residential": { p4: 0, p96: 0 },
+  "2022_2023_yield_house": { p4: 4.500000000000007, p96: 4.500000000000007 },
+  "2022_2023_yield_apt": { p4: 0, p96: 0 },
+};
+
+export const TEST_COMPUTED: ComputedData = {
+  cityIndex: buildCityIndex(TEST_COMMUNES),
+  scales: TEST_SCALES,
+  rentScales: TEST_RENT_SCALES,
+  yieldScales: TEST_YIELD_SCALES,
+  changeScales: TEST_CHANGE_SCALES,
+};

@@ -1,4 +1,4 @@
-import type { Commune, ComputedData, FilterType, ModeType, YearData } from "./types";
+import type { ComputedData, FilterType, ModeType, YearData } from "./types";
 
 export const FILTER_FIELDS: Record<
   FilterType,
@@ -15,108 +15,8 @@ export const ARR = (color = "#cbd5e1") =>
 export const ARROW = ARR();
 export const ARROW_DARK = ARR("#475569");
 
-// ── Scale computation ────────────────────────────
+// ── Scales (pre-computed by process.py) ──────────
 export type Scale = { p4: number; p96: number };
-
-export function computeScales(
-  communes: Commune[],
-  years: number[],
-): { scales: Record<string, Scale>; rentScales: Record<string, Scale>; yieldScales: Record<string, Scale>; changeScales: Record<string, Scale> } {
-  function computePercentiles(values: (number | null | undefined)[]) {
-    const sorted = values.filter((v): v is number => v != null).sort((a, b) => a - b);
-    return {
-      p4: sorted[Math.floor(sorted.length * 0.04)]!,
-      p96: sorted[Math.floor(sorted.length * 0.96)]!,
-    };
-  }
-
-  function buildScales(
-    filterEntries: [string, ...string[]][],
-    extractor: (s: YearData, ...fields: string[]) => number | null,
-  ): Record<string, Scale> {
-    const result: Record<string, Scale> = {};
-    for (const year of ["all", ...years.map(String)]) {
-      for (const [filterKey, ...fields] of filterEntries) {
-        const vals = communes.map((c) => {
-          const s = year === "all" ? c : c.years?.[year];
-          return s ? extractor(s, ...fields) : null;
-        });
-        result[`${year}_${filterKey}`] = computePercentiles(vals);
-      }
-    }
-    return result;
-  }
-
-  const scales: Record<string, Scale> = buildScales(
-    Object.entries(FILTER_FIELDS).map(([k, v]) => [k, v.price as string]),
-    (s, field) => (s as Record<string, unknown>)[field!] as number | null ?? null,
-  );
-
-  const rentScales: Record<string, Scale> = buildScales(
-    Object.entries(FILTER_FIELDS)
-      .filter(([, v]) => v.rent)
-      .map(([k, v]) => [k, v.rent as string]),
-    (s, field) => (s as Record<string, unknown>)[field!] as number | null ?? null,
-  );
-
-  const yieldScales: Record<string, Scale> = buildScales(
-    Object.entries(FILTER_FIELDS)
-      .filter(([, v]) => v.rent)
-      .map(([k, v]) => [k, v.price as string, v.rent as string]),
-    (s, pf, lf) => {
-      const price = (s as Record<string, unknown>)[pf!] as number | null;
-      const rent = (s as Record<string, unknown>)[lf!] as number | null;
-      return price && rent ? ((rent * 12) / price) * 100 : null;
-    },
-  );
-
-  const changeScales: Record<string, Scale> = (() => {
-    const result: Record<string, Scale> = {};
-    const yearStrs = years.map(String);
-    const extractSimple = (c: { years?: Record<string, YearData> }, yr: string, f: string) =>
-      (c.years?.[yr] as Record<string, unknown> | undefined)?.[f] as number | undefined;
-    const extractYield = (c: { years?: Record<string, YearData> }, yr: string, pf: string, lf: string) => {
-      const p = extractSimple(c, yr, pf);
-      const l = extractSimple(c, yr, lf);
-      return p && l ? ((l * 12) / p) * 100 : null;
-    };
-    const modes: [string, [string, ...string[]][], (c: Commune, yr: string, ...fields: string[]) => number | null | undefined][] = [
-      [
-        "price",
-        Object.entries(FILTER_FIELDS).map(([k, v]) => [k, v.price as string]),
-        (c, yr, f) => extractSimple(c, yr, f!),
-      ],
-      [
-        "rent",
-        Object.entries(FILTER_FIELDS).filter(([, v]) => v.rent).map(([k, v]) => [k, v.rent as string]),
-        (c, yr, f) => extractSimple(c, yr, f!),
-      ],
-      [
-        "yield",
-        Object.entries(FILTER_FIELDS).filter(([, v]) => v.rent).map(([k, v]) => [k, v.price as string, v.rent as string]),
-        (c, yr, pf, lf) => extractYield(c, yr, pf!, lf!),
-      ],
-    ];
-    for (const baseYr of yearStrs) {
-      for (const endYr of yearStrs) {
-        if (endYr <= baseYr) continue;
-        for (const [mode, filters, getVal] of modes) {
-          for (const [fk, ...fields] of filters) {
-            const vals = communes.map((c) => {
-              const b = getVal(c, baseYr, ...fields);
-              const e = getVal(c, endYr, ...fields);
-              return b && e ? ((e - b) / b) * 100 : null;
-            });
-            result[`${baseYr}_${endYr}_${mode}_${fk}`] = computePercentiles(vals);
-          }
-        }
-      }
-    }
-    return result;
-  })();
-
-  return { scales, rentScales, yieldScales, changeScales };
-}
 
 export function getScaleForMode(mode: ModeType, year: string, filter: FilterType, computed: ComputedData): Scale {
   if (mode === "price") return computed.scales[`${year}_${filter}`]!;

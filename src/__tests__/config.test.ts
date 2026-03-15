@@ -1,15 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { TEST_COMMUNES, TEST_YEARS } from "./fixtures";
+import { TEST_COMPUTED } from "./fixtures";
 import {
   FILTER_FIELDS,
-  computeScales,
   getScaleForMode,
 } from "../config";
-import { buildCityIndex } from "../data";
 
-const { scales, rentScales, yieldScales, changeScales } = computeScales(TEST_COMMUNES, TEST_YEARS);
-const cityIndex = buildCityIndex(TEST_COMMUNES);
-const computed = { cityIndex, scales, rentScales, yieldScales, changeScales };
+const { scales, rentScales, yieldScales, changeScales } = TEST_COMPUTED;
+const computed = TEST_COMPUTED;
 
 describe("FILTER_FIELDS", () => {
   it("has 4 keys", () => {

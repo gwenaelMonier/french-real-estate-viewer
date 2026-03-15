@@ -508,3 +508,28 @@ body {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Map tile loader ─────────────────────────── */
+.map-loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  background: #f8fafc;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+.map-loader--hidden {
+  opacity: 0;
+}
+.map-loader::before {
+  content: "";
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(226, 232, 240, 0.8);
+  border-top-color: #334155;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}

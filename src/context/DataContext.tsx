@@ -1,12 +1,21 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import type { Commune, ComputedData } from "../types";
-import { computeScales } from "../config";
+import type { Scale } from "../config";
 import { buildCityIndex } from "../data";
 
 interface DataContextValue {
   communes: Commune[];
   years: number[];
   computed: ComputedData;
+}
+
+interface CitiesJson {
+  communes: Commune[];
+  years: number[];
+  scales: Record<string, Scale>;
+  rentScales: Record<string, Scale>;
+  yieldScales: Record<string, Scale>;
+  changeScales: Record<string, Scale>;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -23,8 +32,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetch("/cities.json")
       .then((r) => r.json())
-      .then(({ communes, years }: { communes: Commune[]; years: number[] }) => {
-        const { scales, rentScales, yieldScales, changeScales } = computeScales(communes, years);
+      .then(({ communes, years, scales, rentScales, yieldScales, changeScales }: CitiesJson) => {
         const cityIndex = buildCityIndex(communes);
         setData({
           communes,

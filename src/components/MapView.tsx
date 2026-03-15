@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import maplibregl from "maplibre-gl";
 import type { FilterType, ModeType } from "../types";
@@ -30,6 +30,7 @@ export default function MapView({
 }: Props) {
   const { t, i18n } = useTranslation();
   const { computed } = useData();
+  const [tilesLoading, setTilesLoading] = useState<boolean | null>(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const popupInstanceRef = useRef<maplibregl.Popup | null>(null);
@@ -121,6 +122,7 @@ mapInstanceRef.current = map;
           );
 
           sourceReadyRef.current = true;
+          map.once("idle", () => setTilesLoading(false));
 
           map.on("mousemove", "communes-fill", (e) => {
             if (!e.features?.[0]) return;
@@ -167,6 +169,7 @@ mapInstanceRef.current = map;
     const source = map.getSource("communes") as maplibregl.GeoJSONSource | undefined;
     if (!source) return;
 
+    setTilesLoading(true);
     enrichGeoJSON(
       computed,
       geojsonCacheRef.current,
@@ -178,7 +181,15 @@ mapInstanceRef.current = map;
       endYear,
     );
     source.setData(geojsonCacheRef.current);
+    map.once("idle", () => setTilesLoading(false));
   }, [activeFilter, activeYear, activeMode, showChange, baseYear, endYear]);
 
-  return <div id="map" ref={containerRef} />;
+  return (
+    <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
+      <div id="map" ref={containerRef} />
+      {tilesLoading !== null && (
+        <div className={`map-loader${tilesLoading ? "" : " map-loader--hidden"}`} onTransitionEnd={() => setTilesLoading(null)} />
+      )}
+    </div>
+  );
 }

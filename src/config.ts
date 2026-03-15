@@ -4,10 +4,10 @@ export const FILTER_FIELDS: Record<
   FilterType,
   { price: keyof YearData; rent: (keyof YearData) | null; nb: keyof YearData; rentCount: (keyof YearData) | null }
 > = {
-  residential: { price: "med_m2", rent: "loyer_residentiel", nb: "nb", rentCount: "nb_loyer_residentiel" },
-  house: { price: "med_m2_maison", rent: "loyer_maison", nb: "nb_maison", rentCount: "nb_loyer_maison" },
-  apt: { price: "med_m2_appart", rent: "loyer_appart", nb: "nb_appart", rentCount: "nb_loyer_appart" },
-  land: { price: "med_m2_terrain", rent: null, nb: "nb_terrain", rentCount: null },
+  residential: { price: "median_sqm", rent: "rent_residential", nb: "count", rentCount: "rent_count_residential" },
+  house: { price: "median_sqm_house", rent: "rent_house", nb: "count_house", rentCount: "rent_count_house" },
+  apt: { price: "median_sqm_apt", rent: "rent_apt", nb: "count_apt", rentCount: "rent_count_apt" },
+  land: { price: "median_sqm_land", rent: null, nb: "count_land", rentCount: null },
 };
 
 export const ARR = (color = "#cbd5e1") =>

@@ -1,68 +1,71 @@
 import duckdb, json, csv as csv_mod
 
-CSV = 'data/full_dvf.csv'  # chemin vers le fichier 3.5 Go
+CSV = 'data/full_dvf.csv'  # path to the 3.5 GB file
 
-# ── Chargement des données loyer MEF/DHUP ────────────────────────────────────
-loyer_data = {}  # dict[code_commune][annee][field]
+# ── Loading rent data MEF/DHUP ───────────────────────────────────────────────
+rent_data = {}  # dict[city_code][year][field]
+rent_meta = {}  # dict[city_code] -> {city_name, dept_code}
 
 for typ in ('app', 'mai'):
-    for annee in (2022, 2023, 2024, 2025):
-        path = f'data/loyer-pred-{typ}-mef-dhup-{annee}.csv'
+    for year in (2022, 2023, 2024, 2025):
+        path = f'data/loyer-pred-{typ}-mef-dhup-{year}.csv'
         with open(path, encoding='latin-1') as f:
             reader = csv_mod.DictReader(f, delimiter=';')
             for row in reader:
                 code = row['INSEE_C'].strip().strip('"')
                 val = float(row['loypredm2'].replace(',', '.'))
-                if code not in loyer_data:
-                    loyer_data[code] = {}
-                if annee not in loyer_data[code]:
-                    loyer_data[code][annee] = {}
-                field = 'loyer_appart' if typ == 'app' else 'loyer_maison'
-                loyer_data[code][annee][field] = round(val, 2)
-                nb_field = 'nb_loyer_appart' if typ == 'app' else 'nb_loyer_maison'
-                loyer_data[code][annee][nb_field] = int(row['nbobs_com'] or 0)
+                if code not in rent_data:
+                    rent_data[code] = {}
+                if year not in rent_data[code]:
+                    rent_data[code][year] = {}
+                field = 'rent_apt' if typ == 'app' else 'rent_house'
+                rent_data[code][year][field] = round(val, 2)
+                nb_field = 'rent_count_apt' if typ == 'app' else 'rent_count_house'
+                rent_data[code][year][nb_field] = int(row['nbobs_com'] or 0)
+                if code not in rent_meta:
+                    rent_meta[code] = {
+                        'city_name': row['LIBGEO'].strip().strip('"'),
+                        'dept_code': row['DEP'].strip().strip('"'),
+                    }
 
-# Calculer loyer_residentiel (moyenne pondérée) et dupliquer 2022 → 2020, 2021
-for code, by_year in loyer_data.items():
-    for annee in list(by_year.keys()):
-        d = by_year[annee]
-        pairs = [(d[f], d[nf]) for f, nf in
-                 [('loyer_appart', 'nb_loyer_appart'), ('loyer_maison', 'nb_loyer_maison')]
-                 if d.get(f) is not None and d.get(nf)]
+# Compute rent_residential (weighted average) and backfill 2022 → 2020, 2021
+for code, by_year in rent_data.items():
+    for year in list(by_year.keys()):
+        d = by_year[year]
+        pairs = [(d[f], d.get(nf) or 1) for f, nf in
+                 [('rent_apt', 'rent_count_apt'), ('rent_house', 'rent_count_house')]
+                 if d.get(f) is not None]
         if pairs:
             total_w = sum(nb for _, nb in pairs)
-            d['loyer_residentiel'] = round(sum(v * nb for v, nb in pairs) / total_w, 2) if total_w else None
+            d['rent_residential'] = round(sum(v * nb for v, nb in pairs) / total_w, 2)
         else:
-            d['loyer_residentiel'] = None
-        d['nb_loyer_residentiel'] = (d.get('nb_loyer_appart') or 0) + (d.get('nb_loyer_maison') or 0)
+            d['rent_residential'] = None
+        d['rent_count_residential'] = (d.get('rent_count_apt') or 0) + (d.get('rent_count_house') or 0)
     for yr_fill in (2020, 2021):
         if yr_fill not in by_year and 2022 in by_year:
             by_year[yr_fill] = by_year[2022].copy()
 
-# Calcul des valeurs globales loyer (moyenne pondérée sur 2022-2025)
-loyer_global = {}
-for code, by_year in loyer_data.items():
+# Compute global rent values (simple average over 2022-2025)
+# Simple average: each year contributes equally, whether it has direct observations or not
+global_rent = {}
+for code, by_year in rent_data.items():
     agg = {}
     for field, nb_field in [
-        ('loyer_appart',      'nb_loyer_appart'),
-        ('loyer_maison',      'nb_loyer_maison'),
-        ('loyer_residentiel', 'nb_loyer_residentiel'),
+        ('rent_apt',         'rent_count_apt'),
+        ('rent_house',       'rent_count_house'),
+        ('rent_residential', 'rent_count_residential'),
     ]:
-        pairs = [(by_year[yr][field], by_year[yr].get(nb_field, 0))
-                 for yr in (2022, 2023, 2024, 2025)
-                 if yr in by_year and by_year[yr].get(field) is not None]
-        if pairs:
-            total_w = sum(nb for _, nb in pairs) or len(pairs)
-            agg[field] = round(sum(v * nb for v, nb in pairs) / total_w, 2)
-        else:
-            agg[field] = None
-    for nb_field in ('nb_loyer_appart', 'nb_loyer_maison', 'nb_loyer_residentiel'):
+        vals = [by_year[yr][field]
+                for yr in (2022, 2023, 2024, 2025)
+                if yr in by_year and by_year[yr].get(field) is not None]
+        agg[field] = round(sum(vals) / len(vals), 2) if vals else None
+    for nb_field in ('rent_count_apt', 'rent_count_house', 'rent_count_residential'):
         vals = [by_year[yr][nb_field] for yr in (2022, 2023, 2024, 2025)
                 if yr in by_year and by_year[yr].get(nb_field) is not None]
         agg[nb_field] = round(sum(vals) / len(vals)) if vals else None
-    loyer_global[code] = agg
+    global_rent[code] = agg
 
-print(f"Loyer data chargé : {len(loyer_data)} communes")
+print(f"Rent data loaded: {len(rent_data)} cities")
 
 con = duckdb.connect()
 con.execute("SET memory_limit='2GB'")
@@ -83,9 +86,9 @@ cursor = con.execute(f"""
           AND surface_reelle_bati > 0
           AND valeur_fonciere > 0
     ),
-    -- Agréger par mutation+commune : une mutation peut couvrir plusieurs lots
-    -- (ex. 2 appats vendus ensemble = même valeur_fonciere, surfaces différentes)
-    -- On somme les surfaces et on garde le type si homogène
+    -- Aggregate per transaction+city: one transaction can cover multiple lots
+    -- (e.g. 2 apartments sold together = same valeur_fonciere, different surfaces)
+    -- Sum the surfaces and keep the type if homogeneous
     per_mutation AS (
         SELECT
             id_mutation, code_commune, nom_commune, code_departement,
@@ -97,7 +100,7 @@ cursor = con.execute(f"""
             AVG(longitude) AS longitude
         FROM raw
         GROUP BY id_mutation, code_commune, nom_commune, code_departement, annee
-        HAVING COUNT(DISTINCT type_local) = 1  -- exclure les mutations mixtes Maison+Appart
+        HAVING COUNT(DISTINCT type_local) = 1  -- exclude mixed House+Apartment transactions
     ),
     dedup AS (
         SELECT *,
@@ -131,13 +134,13 @@ cursor = con.execute(f"""
             valeur_fonciere / surface_totale AS prix_m2
         FROM per_terrain
         WHERE surface_totale BETWEEN 9 AND 10000
-          AND valeur_fonciere / surface_totale > 10  -- exclure cessions symboliques (publiques, familiales)
+          AND valeur_fonciere / surface_totale > 10  -- exclude symbolic transfers (public, family)
     ),
     terrain_global AS (
         SELECT
             code_commune,
-            ROUND(MEDIAN(prix_m2)) AS med_m2_terrain,
-            COUNT(*) AS nb_terrain
+            ROUND(MEDIAN(prix_m2)) AS median_sqm_land,
+            COUNT(*) AS count_land
         FROM dedup_terrain
         GROUP BY code_commune
         HAVING COUNT(*) >= 5
@@ -145,8 +148,8 @@ cursor = con.execute(f"""
     terrain_year AS (
         SELECT
             code_commune, annee,
-            ROUND(MEDIAN(prix_m2)) AS med_m2_terrain,
-            COUNT(*) AS nb_terrain
+            ROUND(MEDIAN(prix_m2)) AS median_sqm_land,
+            COUNT(*) AS count_land
         FROM dedup_terrain
         GROUP BY code_commune, annee
         HAVING COUNT(*) >= 3
@@ -157,8 +160,8 @@ cursor = con.execute(f"""
             json_group_object(
                 CAST(annee AS VARCHAR),
                 json_object(
-                    'med_m2_terrain', med_m2_terrain,
-                    'nb_terrain', nb_terrain
+                    'median_sqm_land', median_sqm_land,
+                    'count_land', count_land
                 )
             ) AS terrain_years_json
         FROM terrain_year
@@ -167,12 +170,12 @@ cursor = con.execute(f"""
     global_agg AS (
         SELECT
             code_commune, nom_commune, code_departement AS code_dep,
-            ROUND(MEDIAN(prix_m2)) AS med_m2,
-            ROUND(MEDIAN(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS med_m2_maison,
-            ROUND(MEDIAN(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS med_m2_appart,
-            COUNT(*) AS nb,
-            COUNT(CASE WHEN type_local = 'Maison' THEN 1 END) AS nb_maison,
-            COUNT(CASE WHEN type_local = 'Appartement' THEN 1 END) AS nb_appart,
+            ROUND(MEDIAN(prix_m2)) AS median_sqm,
+            ROUND(MEDIAN(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS median_sqm_house,
+            ROUND(MEDIAN(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS median_sqm_apt,
+            COUNT(*) AS count,
+            COUNT(CASE WHEN type_local = 'Maison' THEN 1 END) AS count_house,
+            COUNT(CASE WHEN type_local = 'Appartement' THEN 1 END) AS count_apt,
             ROUND(AVG(latitude), 5) AS lat,
             ROUND(AVG(longitude), 5) AS lon
         FROM dedup
@@ -182,12 +185,12 @@ cursor = con.execute(f"""
     year_agg AS (
         SELECT
             code_commune, annee,
-            ROUND(MEDIAN(prix_m2)) AS med_m2,
-            ROUND(MEDIAN(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS med_m2_maison,
-            ROUND(MEDIAN(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS med_m2_appart,
-            COUNT(*) AS nb,
-            COUNT(CASE WHEN type_local = 'Maison' THEN 1 END) AS nb_maison,
-            COUNT(CASE WHEN type_local = 'Appartement' THEN 1 END) AS nb_appart
+            ROUND(MEDIAN(prix_m2)) AS median_sqm,
+            ROUND(MEDIAN(CASE WHEN type_local = 'Maison' THEN prix_m2 END)) AS median_sqm_house,
+            ROUND(MEDIAN(CASE WHEN type_local = 'Appartement' THEN prix_m2 END)) AS median_sqm_apt,
+            COUNT(*) AS count,
+            COUNT(CASE WHEN type_local = 'Maison' THEN 1 END) AS count_house,
+            COUNT(CASE WHEN type_local = 'Appartement' THEN 1 END) AS count_apt
         FROM dedup
         GROUP BY code_commune, annee
         HAVING COUNT(*) >= 5
@@ -198,24 +201,24 @@ cursor = con.execute(f"""
             json_group_object(
                 CAST(annee AS VARCHAR),
                 json_object(
-                    'med_m2', med_m2,
-                    'med_m2_maison', med_m2_maison,
-                    'med_m2_appart', med_m2_appart,
-                    'nb', nb,
-                    'nb_maison', nb_maison,
-                    'nb_appart', nb_appart
+                    'median_sqm', median_sqm,
+                    'median_sqm_house', median_sqm_house,
+                    'median_sqm_apt', median_sqm_apt,
+                    'count', count,
+                    'count_house', count_house,
+                    'count_apt', count_apt
                 )
             ) AS years_json
         FROM year_agg
         GROUP BY code_commune
     )
     SELECT
-        g.code_commune,
-        g.nom_commune,
-        g.code_dep,
-        g.med_m2, g.med_m2_maison, g.med_m2_appart,
-        g.nb, g.nb_maison, g.nb_appart,
-        tg.med_m2_terrain, tg.nb_terrain,
+        g.code_commune AS city_code,
+        g.nom_commune  AS city_name,
+        g.code_dep     AS dept_code,
+        g.median_sqm, g.median_sqm_house, g.median_sqm_apt,
+        g.count, g.count_house, g.count_apt,
+        tg.median_sqm_land, tg.count_land,
         g.lat, g.lon,
         COALESCE(yj.years_json, '{{}}') AS years_json,
         COALESCE(tyj.terrain_years_json, '{{}}') AS terrain_years_json
@@ -226,24 +229,25 @@ cursor = con.execute(f"""
     ORDER BY g.code_commune
 """)
 
-GLOBAL_COLS = ['code_commune', 'nom_commune', 'code_dep',
-               'med_m2', 'med_m2_maison', 'med_m2_appart',
-               'nb', 'nb_maison', 'nb_appart',
-               'med_m2_terrain', 'nb_terrain', 'lat', 'lon']
+GLOBAL_COLS = ['city_code', 'city_name', 'dept_code',
+               'median_sqm', 'median_sqm_house', 'median_sqm_apt',
+               'count', 'count_house', 'count_apt',
+               'median_sqm_land', 'count_land', 'lat', 'lon']
 
 all_years = set()
 nb_communes = 0
 
-with open('communes.js', 'w', encoding='utf-8') as f:
+with open('public/cities.js', 'w', encoding='utf-8') as f:
     f.write('const COMMUNES = [\n')
     first = True
+    output_codes = set()
     while True:
         row = cursor.fetchone()
         if row is None:
             break
         if not first:
             f.write(',\n')
-        commune = dict(zip(GLOBAL_COLS, row[:13]))
+        city = dict(zip(GLOBAL_COLS, row[:13]))
         years_data = json.loads(row[13])
         terrain_years_data = json.loads(row[14])
         # Merge terrain year stats into the years dict
@@ -253,17 +257,17 @@ with open('communes.js', 'w', encoding='utf-8') as f:
             else:
                 years_data[yr] = stats
 
-        # Injection des données loyer
-        code = commune['code_commune']
-        lg = loyer_global.get(code, {})
-        commune['loyer_residentiel']    = lg.get('loyer_residentiel')
-        commune['loyer_maison']         = lg.get('loyer_maison')
-        commune['loyer_appart']         = lg.get('loyer_appart')
-        commune['nb_loyer_residentiel'] = lg.get('nb_loyer_residentiel')
-        commune['nb_loyer_maison']      = lg.get('nb_loyer_maison')
-        commune['nb_loyer_appart']      = lg.get('nb_loyer_appart')
+        # Inject rent data
+        code = city['city_code']
+        lg = global_rent.get(code, {})
+        city['rent_residential']    = lg.get('rent_residential')
+        city['rent_house']          = lg.get('rent_house')
+        city['rent_apt']            = lg.get('rent_apt')
+        city['rent_count_residential'] = lg.get('rent_count_residential')
+        city['rent_count_house']    = lg.get('rent_count_house')
+        city['rent_count_apt']      = lg.get('rent_count_apt')
 
-        ly = loyer_data.get(code, {})
+        ly = rent_data.get(code, {})
         for yr_int, fields in ly.items():
             yr_str = str(yr_int)
             if yr_str in years_data:
@@ -272,14 +276,50 @@ with open('communes.js', 'w', encoding='utf-8') as f:
                 years_data[yr_str] = fields.copy()
 
         all_years.update(years_data.keys())
-        commune['years'] = years_data
-        json.dump(commune, f, ensure_ascii=False, separators=(',', ':'))
+        city['years'] = years_data
+        json.dump(city, f, ensure_ascii=False, separators=(',', ':'))
+        output_codes.add(code)
         first = False
         nb_communes += 1
+
+    # Cities with rent data only (not enough DVF transactions)
+    nb_loyer_only = 0
+    for code, by_year in rent_data.items():
+        if code in output_codes:
+            continue
+        meta = rent_meta.get(code, {})
+        if not meta:
+            continue
+        lg = global_rent.get(code, {})
+        years_data = {}
+        for yr_int, fields in by_year.items():
+            years_data[str(yr_int)] = fields.copy()
+        city = {
+            'city_code': code,
+            'city_name': meta['city_name'],
+            'dept_code': meta['dept_code'],
+            'median_sqm': None, 'median_sqm_house': None, 'median_sqm_apt': None,
+            'count': None, 'count_house': None, 'count_apt': None,
+            'median_sqm_land': None, 'count_land': None,
+            'lat': None, 'lon': None,
+            'rent_residential':       lg.get('rent_residential'),
+            'rent_house':             lg.get('rent_house'),
+            'rent_apt':               lg.get('rent_apt'),
+            'rent_count_residential': lg.get('rent_count_residential'),
+            'rent_count_house':       lg.get('rent_count_house'),
+            'rent_count_apt':         lg.get('rent_count_apt'),
+            'years': years_data,
+        }
+        f.write(',\n')
+        json.dump(city, f, ensure_ascii=False, separators=(',', ':'))
+        all_years.update(years_data.keys())
+        nb_loyer_only += 1
+        nb_communes += 1
+
     f.write('\n];\n')
     years_sorted = sorted(int(y) for y in all_years)
     f.write('const YEARS = ')
     json.dump(years_sorted, f)
     f.write(';\n')
 
-print(f"communes.js généré : {nb_communes} communes, années : {years_sorted}")
+print(f"cities.js generated: {nb_communes} cities ({nb_loyer_only} rent-only), years: {years_sorted}")

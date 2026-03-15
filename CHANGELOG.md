@@ -1,5 +1,15 @@
 # Changelog — French real estate viewer
 
+## 2.1.0 — Internationalization
+
+- Added **i18next** and **react-i18next**
+- `LanguageToggle` component (FR / EN)
+- Translation files `fr.json` and `en.json`
+- Default language: French
+- `process.py` updated for bilingual labels
+
+---
+
 ## 2.0.1 — Minor post-migration fixes
 
 - Minor adjustments to dependencies and TypeScript types

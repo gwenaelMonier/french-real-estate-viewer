@@ -31,12 +31,12 @@ export default function Search({ mapRef }: Props) {
       setResults([]);
       return;
     }
-    const matches = COMMUNES.filter((c) => normalize(c.nom_commune).includes(q))
+    const matches = COMMUNES.filter((c) => normalize(c.city_name).includes(q))
       .sort((a, b) => {
-        const aStarts = normalize(a.nom_commune).startsWith(q);
-        const bStarts = normalize(b.nom_commune).startsWith(q);
+        const aStarts = normalize(a.city_name).startsWith(q);
+        const bStarts = normalize(b.city_name).startsWith(q);
         if (aStarts !== bStarts) return aStarts ? -1 : 1;
-        return a.nom_commune.localeCompare(b.nom_commune);
+        return a.city_name.localeCompare(b.city_name);
       })
       .slice(0, MAX_RESULTS);
     setResults(matches);
@@ -45,12 +45,14 @@ export default function Search({ mapRef }: Props) {
 
   const handleSelect = useCallback(
     (c: Commune) => {
-      mapRef.current?.flyTo({
-        center: [c.lon, c.lat],
-        zoom: 12,
-        duration: 800,
-      });
-      setQuery(c.nom_commune);
+      if (c.lat != null && c.lon != null) {
+        mapRef.current?.flyTo({
+          center: [c.lon, c.lat],
+          zoom: 12,
+          duration: 800,
+        });
+      }
+      setQuery(c.city_name);
       setShowResults(false);
     },
     [mapRef],
@@ -93,9 +95,9 @@ export default function Search({ mapRef }: Props) {
       {showResults && (
         <ul id="search-results">
           {results.map((c) => (
-            <li key={c.code_commune} onClick={() => handleSelect(c)}>
-              <span>{c.nom_commune}</span>
-              <span className="dep">{c.code_dep}</span>
+            <li key={c.city_code} onClick={() => handleSelect(c)}>
+              <span>{c.city_name}</span>
+              <span className="dep">{c.dept_code}</span>
             </li>
           ))}
         </ul>

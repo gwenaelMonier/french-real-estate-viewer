@@ -1,26 +1,26 @@
 export interface YearData {
-  med_m2?: number | null;
-  med_m2_maison?: number | null;
-  med_m2_appart?: number | null;
-  med_m2_terrain?: number | null;
-  nb?: number;
-  nb_maison?: number;
-  nb_appart?: number;
-  nb_terrain?: number | null;
-  loyer_residentiel?: number;
-  loyer_maison?: number;
-  loyer_appart?: number;
-  nb_loyer_residentiel?: number;
-  nb_loyer_maison?: number;
-  nb_loyer_appart?: number;
+  median_sqm?: number | null;
+  median_sqm_house?: number | null;
+  median_sqm_apt?: number | null;
+  median_sqm_land?: number | null;
+  count?: number;
+  count_house?: number;
+  count_apt?: number;
+  count_land?: number | null;
+  rent_residential?: number;
+  rent_house?: number;
+  rent_apt?: number;
+  rent_count_residential?: number;
+  rent_count_house?: number;
+  rent_count_apt?: number;
 }
 
 export interface Commune extends YearData {
-  code_commune: string;
-  nom_commune: string;
-  code_dep: string;
-  lat: number;
-  lon: number;
+  city_code: string;
+  city_name: string;
+  dept_code: string;
+  lat?: number | null;
+  lon?: number | null;
   years: Record<string, YearData>;
 }
 

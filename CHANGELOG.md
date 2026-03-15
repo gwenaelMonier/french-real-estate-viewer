@@ -1,5 +1,11 @@
 # Changelog — French real estate viewer
 
+## 2.0.1 — Minor post-migration fixes
+
+- Minor adjustments to dependencies and TypeScript types
+
+---
+
 ## 2.0.0 — React + TypeScript migration
 
 - **Full rewrite in React + TypeScript with Vite**

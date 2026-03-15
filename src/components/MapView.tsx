@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import maplibregl from "maplibre-gl";
 import type { FilterType, ModeType } from "../types";
-import { MODE_CONFIG, ARROW_DARK } from "../config";
+import { getModeConfig, ARROW_DARK } from "../config";
 import { enrichGeoJSON } from "../data";
 
 interface Props {
@@ -26,6 +27,7 @@ export default function MapView({
   endYear,
   onMapReady,
 }: Props) {
+  const { t, i18n } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const popupInstanceRef = useRef<maplibregl.Popup | null>(null);
@@ -34,8 +36,8 @@ export default function MapView({
   const sourceReadyRef = useRef(false);
 
   // Keep a ref to current state for tooltip closure
-  const stateRef = useRef({ activeFilter, activeYear, activeMode, showChange, baseYear, endYear });
-  stateRef.current = { activeFilter, activeYear, activeMode, showChange, baseYear, endYear };
+  const stateRef = useRef({ activeFilter, activeYear, activeMode, showChange, baseYear, endYear, t, locale: i18n.language });
+  stateRef.current = { activeFilter, activeYear, activeMode, showChange, baseYear, endYear, t, locale: i18n.language };
 
   // Init map once
   useEffect(() => {
@@ -46,6 +48,7 @@ export default function MapView({
       style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
       center: [1.888334, 46.603354],
       zoom: 6,
+      attributionControl: { compact: true },
     });
 
     const popup = new maplibregl.Popup({
@@ -54,7 +57,7 @@ export default function MapView({
       offset: 10,
     });
 
-    mapInstanceRef.current = map;
+mapInstanceRef.current = map;
     popupInstanceRef.current = popup;
     onMapReady(map, popup);
 
@@ -122,7 +125,7 @@ export default function MapView({
             if (!p.cityName) return;
             map.getCanvas().style.cursor = "pointer";
             const st = stateRef.current;
-            const cfg = MODE_CONFIG[st.activeMode];
+            const cfg = getModeConfig(st.t, st.locale)[st.activeMode];
             let html: string;
             if (st.showChange && (p.change as number) > -999) {
               const sign = (p.change as number) >= 0 ? "+" : "";
@@ -135,7 +138,7 @@ export default function MapView({
               const body = cfg.tooltipHtml(p as Record<string, unknown>);
               html = body
                 ? `<b>${p.cityName}</b> (${p.deptCode})<br>${body}`
-                : `<b>${p.cityName}</b><br><small style="color:#999">Aucune donnée</small>`;
+                : `<b>${p.cityName}</b><br><small style="color:#999">${st.t("noData")}</small>`;
             }
             popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
           });

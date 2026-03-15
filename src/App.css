@@ -429,6 +429,44 @@ body {
   color: #94a3b8;
 }
 
+/* ── Language toggle ─────────────────────────── */
+.lang-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: flex;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+.lang-toggle button {
+  border: none;
+  background: none;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s, background 0.15s;
+}
+.lang-toggle button:hover {
+  color: #475569;
+}
+.lang-toggle button.active {
+  background: #334155;
+  color: white;
+}
+
+
+/* ── MapLibre attribution ────────────────────── */
+.maplibregl-ctrl-attrib.maplibregl-compact-show {
+  display: none;
+}
+
 /* Popup */
 .maplibregl-popup-content {
   font-family: "Plus Jakarta Sans", sans-serif;

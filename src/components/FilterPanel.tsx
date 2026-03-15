@@ -1,4 +1,5 @@
 import { Fragment, type ChangeEvent } from "react";
+import { useTranslation } from "react-i18next";
 import type { FilterType, ModeType } from "../types";
 import { ARROW_DARK } from "../config";
 
@@ -61,24 +62,26 @@ export default function FilterPanel({
   onBaseYearChange,
   onEndYearChange,
 }: Props) {
+  const { t } = useTranslation();
+
   const modes: [ModeType, string][] = [
-    ["price", "Prix /m²"],
-    ["rent", "Loyer /m²"],
-    ["yield", "Rendement"],
+    ["price", t("modePrice")],
+    ["rent", t("modeRent")],
+    ["yield", t("modeYield")],
   ];
 
   const filterOptions: [string, string][] =
     activeMode === "rent" || activeMode === "yield"
       ? [
-          ["residential", "Résidentiel"],
-          ["house", "Maison"],
-          ["apt", "Appart"],
+          ["residential", t("filterResidential")],
+          ["house", t("filterHouse")],
+          ["apt", t("filterApt")],
         ]
       : [
-          ["residential", "Résidentiel"],
-          ["house", "Maison"],
-          ["apt", "Appart"],
-          ["land", "Terrain"],
+          ["residential", t("filterResidential")],
+          ["house", t("filterHouse")],
+          ["apt", t("filterApt")],
+          ["land", t("filterLand")],
         ];
 
   const n = YEARS.length - 1;
@@ -129,8 +132,8 @@ export default function FilterPanel({
           <SegGroup
             name="viewMode"
             options={[
-              ["value", "Valeur"],
-              ["change", "Évolution"],
+              ["value", t("viewValue")],
+              ["change", t("viewChange")],
             ]}
             active={showChange ? "change" : "value"}
             onChange={(val) => onViewModeChange(val === "change")}
@@ -149,14 +152,14 @@ export default function FilterPanel({
         {!showChange ? (
           <div className="filter-section">
             <div className="year-inline">
-              <span className="filter-label">Année</span>
+              <span className="filter-label">{t("yearLabel")}</span>
               <select
                 name="year"
                 className="filter-select"
                 value={activeYear}
                 onChange={(e) => onYearChange(e.target.value)}
               >
-                <option value="all">Toutes</option>
+                <option value="all">{t("yearAll")}</option>
                 {YEARS.map((y) => (
                   <option key={y} value={y}>
                     {y}
@@ -168,7 +171,7 @@ export default function FilterPanel({
         ) : (
           <div className="filter-section">
             <div className="year-slider-header">
-              <span className="filter-label">Période</span>
+              <span className="filter-label">{t("periodLabel")}</span>
               <span
                 className="year-slider-values"
                 dangerouslySetInnerHTML={{

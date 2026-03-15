@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import type maplibregl from "maplibre-gl";
 import type { Commune } from "../types";
 
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function Search({ mapRef }: Props) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Commune[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -77,7 +79,7 @@ export default function Search({ mapRef }: Props) {
         <input
           id="search-input"
           type="text"
-          placeholder="Rechercher une commune…"
+          placeholder={t("searchPlaceholder")}
           autoComplete="off"
           value={query}
           onChange={(e) => handleInput(e.target.value)}

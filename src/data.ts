@@ -1,5 +1,5 @@
 import type { Commune, FilterType, ModeType, YearData } from "./types";
-import { FILTER_FIELDS, MODE_CONFIG, changeScales } from "./config";
+import { FILTER_FIELDS, getScaleForMode, changeScales } from "./config";
 
 export function getStats(c: Commune, activeYear: string): YearData | null {
   if (activeYear === "all") return c;
@@ -85,7 +85,7 @@ export function enrichGeoJSON(
   endYear: string,
 ): any {
   const ff = FILTER_FIELDS[filter];
-  const scale = !showChange ? MODE_CONFIG[mode].getScale(year, filter) : null;
+  const scale = !showChange ? getScaleForMode(mode, year, filter) : null;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   geojson.features.forEach((f: any) => {

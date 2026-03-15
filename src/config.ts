@@ -111,6 +111,12 @@ export const changeScales: Record<string, Scale> = (() => {
   return result;
 })();
 
+export function getScaleForMode(mode: ModeType, year: string, filter: FilterType): Scale {
+  if (mode === "price") return scales[`${year}_${filter}`]!;
+  if (mode === "rent") return rentScales[`${year}_${filter === "land" ? "residential" : filter}`]!;
+  return yieldScales[`${year}_${filter}`]!;
+}
+
 // ── Mode config ──────────────────────────────────
 export interface ModeConfigEntry {
   label: string;
@@ -121,41 +127,46 @@ export interface ModeConfigEntry {
   tooltipHtml: (p: Record<string, unknown>) => string | null;
 }
 
-export const MODE_CONFIG: Record<ModeType, ModeConfigEntry> = {
-  price: {
-    label: "Prix médian au m²",
-    modeLabel: "Prix",
-    getScale: (year, filter) => scales[`${year}_${filter}`]!,
-    legendFormat: (v) => `${Math.round(v).toLocaleString("fr-FR")} €`,
-    changeDetail: (b, e) =>
-      `<small>${b.toLocaleString("fr-FR")} ${ARROW_DARK} ${e.toLocaleString("fr-FR")} €/m²</small>`,
-    tooltipHtml: (p) =>
-      (p.price as number) >= 0
-        ? `${Number(p.price).toLocaleString("fr-FR")} €/m²<br><small>${p.nb} ventes</small>`
-        : null,
-  },
-  rent: {
-    label: "Loyer au m² / mois",
-    modeLabel: "Loyer",
-    getScale: (year, filter) => rentScales[`${year}_${filter === "land" ? "residential" : filter}`]!,
-    legendFormat: (v) => `${v.toFixed(1)} €`,
-    changeDetail: (b, e) =>
-      `<small>${b.toFixed(1)} ${ARROW_DARK} ${e.toFixed(1)} €/m²/mois</small>`,
-    tooltipHtml: (p) =>
-      (p.rent as number) >= 0
-        ? `${Number(p.rent).toFixed(1)} €/m²/mois<br><small>${p.rentCount} annonces</small>`
-        : null,
-  },
-  yield: {
-    label: "Rentabilité brute / an",
-    modeLabel: "Rentabilité",
-    getScale: (year, filter) => yieldScales[`${year}_${filter}`]!,
-    legendFormat: (v) => `${v.toFixed(1)}%`,
-    changeDetail: (b, e) =>
-      `<small>${b.toFixed(1)}% ${ARROW_DARK} ${e.toFixed(1)}% brut/an</small>`,
-    tooltipHtml: (p) =>
-      (p.yield as number) >= 0
-        ? `${Number(p.yield).toFixed(1)}% brut/an<br><small>${Number(p.price).toLocaleString("fr-FR")} €/m² · ${Number(p.rent).toFixed(1)} €/m²/mois</small>`
-        : null,
-  },
-};
+type TFn = (key: string) => string;
+
+export function getModeConfig(t: TFn, locale: string): Record<ModeType, ModeConfigEntry> {
+  const loc = locale === "fr" ? "fr-FR" : "en-GB";
+  return {
+    price: {
+      label: t("priceLabel"),
+      modeLabel: t("priceModeLabel"),
+      getScale: (year, filter) => scales[`${year}_${filter}`]!,
+      legendFormat: (v) => `${Math.round(v).toLocaleString(loc)} €`,
+      changeDetail: (b, e) =>
+        `<small>${b.toLocaleString(loc)} ${ARROW_DARK} ${e.toLocaleString(loc)} ${t("unitPerSqm")}</small>`,
+      tooltipHtml: (p) =>
+        (p.price as number) >= 0
+          ? `${Number(p.price).toLocaleString(loc)} ${t("unitPerSqm")}<br><small>${p.nb} ${t("unitSales")}</small>`
+          : null,
+    },
+    rent: {
+      label: t("rentLabel"),
+      modeLabel: t("rentModeLabel"),
+      getScale: (year, filter) => rentScales[`${year}_${filter === "land" ? "residential" : filter}`]!,
+      legendFormat: (v) => `${v.toFixed(1)} €`,
+      changeDetail: (b, e) =>
+        `<small>${b.toFixed(1)} ${ARROW_DARK} ${e.toFixed(1)} ${t("unitPerSqmMonth")}</small>`,
+      tooltipHtml: (p) =>
+        (p.rent as number) >= 0
+          ? `${Number(p.rent).toFixed(1)} ${t("unitPerSqmMonth")}<br><small>${p.rentCount} ${t("unitListings")}</small>`
+          : null,
+    },
+    yield: {
+      label: t("yieldLabel"),
+      modeLabel: t("yieldModeLabel"),
+      getScale: (year, filter) => yieldScales[`${year}_${filter}`]!,
+      legendFormat: (v) => `${v.toFixed(1)}%`,
+      changeDetail: (b, e) =>
+        `<small>${b.toFixed(1)}% ${ARROW_DARK} ${e.toFixed(1)}% ${t("unitGrossYear")}</small>`,
+      tooltipHtml: (p) =>
+        (p.yield as number) >= 0
+          ? `${Number(p.yield).toFixed(1)}% ${t("unitGrossYear")}<br><small>${Number(p.price).toLocaleString(loc)} ${t("unitPerSqm")} · ${Number(p.rent).toFixed(1)} ${t("unitPerSqmMonth")}</small>`
+          : null,
+    },
+  };
+}

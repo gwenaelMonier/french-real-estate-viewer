@@ -5,6 +5,7 @@ import MapView from "./components/MapView";
 import Legend from "./components/Legend";
 import FilterPanel from "./components/FilterPanel";
 import Search from "./components/Search";
+import LanguageToggle from "./components/LanguageToggle";
 
 const LATEST_YEAR = String(Math.max(...YEARS));
 
@@ -92,6 +93,7 @@ export default function App() {
         onEndYearChange={handleEndYearChange}
       />
       <Search mapRef={mapRef} />
+      <LanguageToggle />
     </>
   );
 }

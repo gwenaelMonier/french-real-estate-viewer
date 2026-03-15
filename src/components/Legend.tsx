@@ -1,4 +1,5 @@
-import { MODE_CONFIG, ARROW_DARK, changeScales } from "../config";
+import { useTranslation } from "react-i18next";
+import { getModeConfig, ARROW_DARK, changeScales } from "../config";
 import type { FilterType, ModeType } from "../types";
 
 interface Props {
@@ -18,6 +19,9 @@ export default function Legend({
   baseYear,
   endYear,
 }: Props) {
+  const { t, i18n } = useTranslation();
+  const MODE_CONFIG = getModeConfig(t, i18n.language);
+
   if (showChange) {
     const { modeLabel } = MODE_CONFIG[activeMode];
     const scale = changeScales[`${baseYear}_${endYear}_${activeMode}_${activeFilter}`];
@@ -31,7 +35,7 @@ export default function Legend({
       >
         <b
           dangerouslySetInnerHTML={{
-            __html: `Évol. ${modeLabel} ${baseYear} ${ARROW_DARK} ${endYear}`,
+            __html: `${t("evolPrefix")} ${modeLabel} ${baseYear} ${ARROW_DARK} ${endYear}`,
           }}
         />
         <div className="legend-gradient legend-gradient-evol" />

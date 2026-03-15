@@ -2,15 +2,9 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import type maplibregl from "maplibre-gl";
 import type { Commune } from "../types";
+import { normalize } from "../utils";
 
 const MAX_RESULTS = 8;
-
-function normalize(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
 
 interface Props {
   mapRef: React.RefObject<maplibregl.Map | null>;

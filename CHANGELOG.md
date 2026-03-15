@@ -1,5 +1,14 @@
 # Changelog — French real estate viewer
 
+## 2.2.0 — Unit tests
+
+- Set up **Vitest** as the test runner
+- First tests: `config.test.ts`, `data.test.ts`, `normalize.test.ts`
+- `src/__tests__/` directory with fixtures and setup
+- `test` script added to `package.json`
+
+---
+
 ## 2.1.0 — Internationalization
 
 - Added **i18next** and **react-i18next**

@@ -194,6 +194,31 @@ body {
   flex-shrink: 0;
   margin-bottom: 0;
 }
+/* Year select */
+.filter-select {
+  width: 100%;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 12.5px;
+  font-weight: 500;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 7px;
+  padding: 6px 28px 6px 10px;
+  cursor: pointer;
+  background-color: #f8fafc;
+  color: #334155;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.filter-select:focus {
+  outline: none;
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.15);
+}
 .year-inline .filter-select {
   flex: 1;
 }
@@ -258,32 +283,6 @@ body {
 .info-icon:hover::after,
 .info-icon:hover::before {
   opacity: 1;
-}
-
-/* Year select */
-.filter-select {
-  width: 100%;
-  font-family: "Plus Jakarta Sans", sans-serif;
-  font-size: 12.5px;
-  font-weight: 500;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 7px;
-  padding: 6px 28px 6px 10px;
-  cursor: pointer;
-  background-color: #f8fafc;
-  color: #334155;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-.filter-select:focus {
-  outline: none;
-  border-color: #94a3b8;
-  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.15);
 }
 
 /* Dual range slider */
@@ -546,7 +545,13 @@ body {
   transform-origin: left;
 }
 @keyframes progress-slide {
-  0%   { transform: translateX(-100%); }
-  50%  { transform: translateX(0); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }

@@ -1,6 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import { renderWith } from "../test/renderWith";
 import Search from "./Search";
 
@@ -12,10 +11,10 @@ describe("Search", () => {
     expect(container.querySelector("#search-results")).toBeNull();
   });
 
-  it("typing filters communes", async () => {
+  it("typing filters cities", async () => {
     const user = userEvent.setup();
     const { container } = renderWith(<Search mapRef={mapRef} />);
-    const input = container.querySelector("input")!;
+    const input = container.querySelector("input") as HTMLInputElement;
     await user.type(input, "Ville");
     const items = container.querySelectorAll("#search-results li");
     expect(items.length).toBeGreaterThanOrEqual(1);
@@ -25,7 +24,7 @@ describe("Search", () => {
   it("startsWith matches are sorted first", async () => {
     const user = userEvent.setup();
     const { container } = renderWith(<Search mapRef={mapRef} />);
-    const input = container.querySelector("input")!;
+    const input = container.querySelector("input") as HTMLInputElement;
     await user.type(input, "par");
     const items = container.querySelectorAll("#search-results li");
     expect(items[0].textContent).toContain("Paris");
@@ -36,12 +35,12 @@ describe("Search", () => {
     const ref = { current: { flyTo } } as any;
     const user = userEvent.setup();
     const { container } = renderWith(<Search mapRef={ref} />);
-    const input = container.querySelector("input")!;
+    const input = container.querySelector("input") as HTMLInputElement;
     await user.type(input, "Paris");
-    const item = container.querySelector("#search-results li")!;
+    const item = container.querySelector("#search-results li") as HTMLElement;
     await user.click(item);
     expect(flyTo).toHaveBeenCalledWith(
-      expect.objectContaining({ center: [2.35, 48.86], zoom: 12 }),
+      expect.objectContaining({ center: [2.35, 48.86], zoom: 12 })
     );
     expect(container.querySelector("#search-results")).toBeNull();
   });
@@ -52,7 +51,7 @@ describe("Search", () => {
     const input = container.querySelector("input") as HTMLInputElement;
     await user.type(input, "Paris");
     expect(input.value).toBe("Paris");
-    const clearBtn = container.querySelector("button")!;
+    const clearBtn = container.querySelector("button") as HTMLButtonElement;
     await user.click(clearBtn);
     expect(input.value).toBe("");
   });
@@ -60,7 +59,7 @@ describe("Search", () => {
   it("normalizes accents for search", async () => {
     const user = userEvent.setup();
     const { container } = renderWith(<Search mapRef={mapRef} />);
-    const input = container.querySelector("input")!;
+    const input = container.querySelector("input") as HTMLInputElement;
     await user.type(input, "ville");
     const items = container.querySelectorAll("#search-results li");
     expect(items.length).toBeGreaterThanOrEqual(1);

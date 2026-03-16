@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useTranslation } from "react-i18next";
 import type maplibregl from "maplibre-gl";
-import type { Commune } from "../types";
-import { normalize } from "../utils";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useData } from "../context/DataContext";
+import type { City } from "../types";
+import { normalize } from "../utils";
 
 const MAX_RESULTS = 8;
 
@@ -13,45 +13,51 @@ interface Props {
 
 export default function Search({ mapRef }: Props) {
   const { t } = useTranslation();
-  const { communes } = useData();
+  const { cities } = useData();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Commune[]>([]);
+  const [results, setResults] = useState<City[]>([]);
   const [showResults, setShowResults] = useState(false);
   const controlRef = useRef<HTMLDivElement>(null);
 
-  const handleInput = useCallback((value: string) => {
-    setQuery(value);
-    const q = normalize(value.trim());
-    if (!q) {
-      setShowResults(false);
-      setResults([]);
-      return;
-    }
-    const matches = communes.filter((c) => normalize(c.city_name).includes(q))
-      .sort((a, b) => {
-        const aStarts = normalize(a.city_name).startsWith(q);
-        const bStarts = normalize(b.city_name).startsWith(q);
-        if (aStarts !== bStarts) return aStarts ? -1 : 1;
-        return a.city_name.localeCompare(b.city_name);
-      })
-      .slice(0, MAX_RESULTS);
-    setResults(matches);
-    setShowResults(matches.length > 0);
-  }, [communes]);
+  const handleInput = useCallback(
+    (value: string) => {
+      setQuery(value);
+      const q = normalize(value.trim());
+      if (!q) {
+        setShowResults(false);
+        setResults([]);
+        return;
+      }
+      const matches = cities
+        .filter((city) => normalize(city.city_name).includes(q))
+        .sort((a, b) => {
+          const aStarts = normalize(a.city_name).startsWith(q);
+          const bStarts = normalize(b.city_name).startsWith(q);
+          if (aStarts !== bStarts) {
+            return aStarts ? -1 : 1;
+          }
+          return a.city_name.localeCompare(b.city_name);
+        })
+        .slice(0, MAX_RESULTS);
+      setResults(matches);
+      setShowResults(matches.length > 0);
+    },
+    [cities]
+  );
 
   const handleSelect = useCallback(
-    (c: Commune) => {
-      if (c.lat != null && c.lon != null) {
+    (city: City) => {
+      if (city.lat != null && city.lon != null) {
         mapRef.current?.flyTo({
-          center: [c.lon, c.lat],
+          center: [city.lon, city.lat],
           zoom: 12,
           duration: 800,
         });
       }
-      setQuery(c.city_name);
+      setQuery(city.city_name);
       setShowResults(false);
     },
-    [mapRef],
+    [mapRef]
   );
 
   const handleClear = useCallback(() => {
@@ -90,10 +96,10 @@ export default function Search({ mapRef }: Props) {
       </div>
       {showResults && (
         <ul id="search-results">
-          {results.map((c) => (
-            <li key={c.city_code} onClick={() => handleSelect(c)}>
-              <span>{c.city_name}</span>
-              <span className="dep">{c.dept_code}</span>
+          {results.map((city) => (
+            <li key={city.city_code} onClick={() => handleSelect(city)}>
+              <span>{city.city_name}</span>
+              <span className="dep">{city.dept_code}</span>
             </li>
           ))}
         </ul>

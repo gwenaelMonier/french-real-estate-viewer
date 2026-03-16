@@ -1,5 +1,14 @@
 # Changelog — French real estate viewer
 
+## 3.2.0 — Biome linting
+
+- Added **Biome** as linter and formatter (`biome.json`)
+- `lint` (`biome check --write src`) and `lint:check` scripts in `package.json`
+- Package renamed to `french-real-estate-viewer`
+- All source files formatted and fixed according to Biome rules
+
+---
+
 ## 3.1.0 — Component tests
 
 - React component tests: `FilterPanel`, `Search`, `Legend`, `LanguageToggle`

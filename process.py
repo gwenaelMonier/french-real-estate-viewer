@@ -235,7 +235,7 @@ GLOBAL_COLS = ['city_code', 'city_name', 'dept_code',
                'median_sqm_land', 'count_land', 'lat', 'lon']
 
 all_years = set()
-communes_list = []
+cities_list = []
 output_codes = set()
 
 while True:
@@ -270,7 +270,7 @@ while True:
 
     all_years.update(years_data.keys())
     city['years'] = years_data
-    communes_list.append(city)
+    cities_list.append(city)
     output_codes.add(code)
 
 # Cities with rent data only (not enough DVF transactions)
@@ -301,12 +301,12 @@ for code, by_year in rent_data.items():
         'rent_count_apt':         lg.get('rent_count_apt'),
         'years': years_data,
     }
-    communes_list.append(city)
+    cities_list.append(city)
     all_years.update(years_data.keys())
     nb_loyer_only += 1
 
 years_sorted = sorted(int(y) for y in all_years)
-nb_communes = len(communes_list)
+nb_cities = len(cities_list)
 
 # ── Pre-compute scales ───────────────────────────────────────────────────────
 
@@ -339,7 +339,7 @@ scales = {}
 for yr in year_keys:
     for fk, ff in FILTER_FIELDS.items():
         vals = []
-        for c in communes_list:
+        for c in cities_list:
             s = c if yr == 'all' else (c.get('years') or {}).get(yr, {})
             vals.append(get_field(s, ff['price']))
         scales[f'{yr}_{fk}'] = compute_percentiles(vals)
@@ -351,7 +351,7 @@ for yr in year_keys:
         if ff['rent'] is None:
             continue
         vals = []
-        for c in communes_list:
+        for c in cities_list:
             s = c if yr == 'all' else (c.get('years') or {}).get(yr, {})
             vals.append(get_field(s, ff['rent']))
         rent_scales[f'{yr}_{fk}'] = compute_percentiles(vals)
@@ -363,7 +363,7 @@ for yr in year_keys:
         if ff['rent'] is None:
             continue
         vals = []
-        for c in communes_list:
+        for c in cities_list:
             s = c if yr == 'all' else (c.get('years') or {}).get(yr, {})
             price = get_field(s, ff['price'])
             rent = get_field(s, ff['rent'])
@@ -385,7 +385,7 @@ for base_yr in yr_strs:
         for mode_name, filters in modes:
             for fk, fields in filters:
                 vals = []
-                for c in communes_list:
+                for c in cities_list:
                     yrs = c.get('years') or {}
                     base_data = yrs.get(base_yr, {})
                     end_data = yrs.get(end_yr, {})
@@ -407,7 +407,7 @@ print(f"Scales computed: {len(scales)} price, {len(rent_scales)} rent, {len(yiel
 # ── Write cities.json ────────────────────────────────────────────────────────
 
 output = {
-    'communes': communes_list,
+    'cities': cities_list,
     'years': years_sorted,
     'scales': scales,
     'rentScales': rent_scales,
@@ -418,7 +418,7 @@ output = {
 with open('public/cities.json', 'w', encoding='utf-8') as f:
     json.dump(output, f, ensure_ascii=False, separators=(',', ':'))
 
-print(f"cities.json generated: {nb_communes} cities ({nb_loyer_only} rent-only), years: {years_sorted}")
+print(f"cities.json generated: {nb_cities} cities ({nb_loyer_only} rent-only), years: {years_sorted}")
 
 # ── Generate PMTiles ────────────────────────────────────────────────────────
 
@@ -426,7 +426,7 @@ import subprocess, tempfile, urllib.request, os
 
 def generate_pmtiles():
     url = "https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/communes-version-simplifiee.geojson"
-    out = "public/communes.pmtiles"
+    out = "public/cities.pmtiles"
     with tempfile.NamedTemporaryFile(suffix=".geojson", delete=False) as tmp:
         print("Downloading communes GeoJSON...")
         urllib.request.urlretrieve(url, tmp.name)
@@ -435,7 +435,7 @@ def generate_pmtiles():
             "tippecanoe",
             "-o", out,
             "-Z", "4", "-z", "12",
-            "-l", "communes",
+            "-l", "cities",
             "--no-feature-limit",
             "--no-tile-size-limit",
             "--coalesce-densest-as-needed",

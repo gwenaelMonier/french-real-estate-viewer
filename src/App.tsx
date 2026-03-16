@@ -1,12 +1,12 @@
-import { useState, useCallback, useRef } from "react";
 import type maplibregl from "maplibre-gl";
-import type { FilterType, ModeType } from "./types";
-import { useData } from "./context/DataContext";
-import MapView from "./components/MapView";
-import Legend from "./components/Legend";
+import { useCallback, useRef, useState } from "react";
 import FilterPanel from "./components/FilterPanel";
-import Search from "./components/Search";
 import LanguageToggle from "./components/LanguageToggle";
+import Legend from "./components/Legend";
+import MapView from "./components/MapView";
+import Search from "./components/Search";
+import { useData } from "./context/DataContext";
+import type { FilterType, ModeType } from "./types";
 
 export default function App() {
   const { years } = useData();
@@ -22,10 +22,13 @@ export default function App() {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
 
-  const onMapReady = useCallback((map: maplibregl.Map, popup: maplibregl.Popup) => {
-    mapRef.current = map;
-    popupRef.current = popup;
-  }, []);
+  const onMapReady = useCallback(
+    (map: maplibregl.Map, popup: maplibregl.Popup) => {
+      mapRef.current = map;
+      popupRef.current = popup;
+    },
+    []
+  );
 
   const handleModeChange = useCallback(
     (mode: ModeType) => {
@@ -35,7 +38,7 @@ export default function App() {
       }
       popupRef.current?.remove();
     },
-    [activeFilter],
+    [activeFilter]
   );
 
   const handleFilterChange = useCallback((filter: FilterType) => {

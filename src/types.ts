@@ -15,7 +15,7 @@ export interface YearData {
   rent_count_apt?: number;
 }
 
-export interface Commune extends YearData {
+export interface City extends YearData {
   city_code: string;
   city_name: string;
   dept_code: string;
@@ -30,9 +30,20 @@ export type ModeType = "price" | "rent" | "yield";
 import type { Scale } from "./config";
 
 export interface ComputedData {
-  cityIndex: Record<string, Commune>;
+  cityIndex: Record<string, City>;
   scales: Record<string, Scale>;
   rentScales: Record<string, Scale>;
   yieldScales: Record<string, Scale>;
   changeScales: Record<string, Scale>;
+}
+
+export interface TooltipData {
+  price: number;
+  nb: number;
+  rent: number;
+  rentCount: number;
+  yield: number;
+  change: number;
+  changeBase: number;
+  changeEnd: number;
 }

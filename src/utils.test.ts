@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { normalize } from "./utils";
 
 describe("normalize", () => {
@@ -11,7 +11,9 @@ describe("normalize", () => {
   });
 
   it('"Saint-Étienne-du-Rouvray" → "saint-etienne-du-rouvray"', () => {
-    expect(normalize("Saint-Étienne-du-Rouvray")).toBe("saint-etienne-du-rouvray");
+    expect(normalize("Saint-Étienne-du-Rouvray")).toBe(
+      "saint-etienne-du-rouvray"
+    );
   });
 
   it('"lyon" → "lyon"', () => {

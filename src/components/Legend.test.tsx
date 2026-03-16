@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { renderWith } from "../test/renderWith";
 import Legend from "./Legend";
 
@@ -23,7 +23,7 @@ describe("Legend", () => {
 
   it("renders change legend with ±range", () => {
     const { container } = renderWith(
-      <Legend {...baseProps} showChange={true} />,
+      <Legend {...baseProps} showChange={true} />
     );
     const labels = container.querySelectorAll(".legend-labels span");
     expect(labels).toHaveLength(3);
@@ -35,12 +35,7 @@ describe("Legend", () => {
 
   it("returns null if no scale found", () => {
     const { container } = renderWith(
-      <Legend
-        {...baseProps}
-        showChange={true}
-        baseYear="2020"
-        endYear="2020"
-      />,
+      <Legend {...baseProps} showChange={true} baseYear="2020" endYear="2020" />
     );
     expect(container.querySelector(".legend")).toBeNull();
   });

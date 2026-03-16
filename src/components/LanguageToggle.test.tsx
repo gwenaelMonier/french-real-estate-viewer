@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import i18nTest from "../test/i18n-test";
 import { renderWith } from "../test/renderWith";
 import LanguageToggle from "./LanguageToggle";
-import i18nTest from "../test/i18n-test";
 
 describe("LanguageToggle", () => {
   it("FR button has active class when lang=fr", () => {

@@ -1,13 +1,44 @@
-import type { ComputedData, FilterType, ModeType, YearData } from "./types";
+import type {
+  ComputedData,
+  FilterType,
+  ModeType,
+  TooltipData,
+  YearData,
+} from "./types";
 
 export const FILTER_FIELDS: Record<
   FilterType,
-  { price: keyof YearData; rent: (keyof YearData) | null; nb: keyof YearData; rentCount: (keyof YearData) | null }
+  {
+    price: keyof YearData;
+    rent: keyof YearData | null;
+    nb: keyof YearData;
+    rentCount: keyof YearData | null;
+  }
 > = {
-  residential: { price: "median_sqm", rent: "rent_residential", nb: "count", rentCount: "rent_count_residential" },
-  house: { price: "median_sqm_house", rent: "rent_house", nb: "count_house", rentCount: "rent_count_house" },
-  apt: { price: "median_sqm_apt", rent: "rent_apt", nb: "count_apt", rentCount: "rent_count_apt" },
-  land: { price: "median_sqm_land", rent: null, nb: "count_land", rentCount: null },
+  residential: {
+    price: "median_sqm",
+    rent: "rent_residential",
+    nb: "count",
+    rentCount: "rent_count_residential",
+  },
+  house: {
+    price: "median_sqm_house",
+    rent: "rent_house",
+    nb: "count_house",
+    rentCount: "rent_count_house",
+  },
+  apt: {
+    price: "median_sqm_apt",
+    rent: "rent_apt",
+    nb: "count_apt",
+    rentCount: "rent_count_apt",
+  },
+  land: {
+    price: "median_sqm_land",
+    rent: null,
+    nb: "count_land",
+    rentCount: null,
+  },
 };
 
 export const ARR = (color = "#cbd5e1") =>
@@ -18,61 +49,79 @@ export const ARROW_DARK = ARR("#475569");
 // ── Scales (pre-computed by process.py) ──────────
 export type Scale = { p4: number; p96: number };
 
-export function getScaleForMode(mode: ModeType, year: string, filter: FilterType, computed: ComputedData): Scale {
-  if (mode === "price") return computed.scales[`${year}_${filter}`]!;
-  if (mode === "rent") return computed.rentScales[`${year}_${filter === "land" ? "residential" : filter}`]!;
-  return computed.yieldScales[`${year}_${filter}`]!;
+export function getScaleForMode(
+  mode: ModeType,
+  year: string,
+  filter: FilterType,
+  computed: ComputedData
+): Scale | undefined {
+  if (mode === "price") {
+    return computed.scales[`${year}_${filter}`];
+  }
+  if (mode === "rent") {
+    return computed.rentScales[
+      `${year}_${filter === "land" ? "residential" : filter}`
+    ];
+  }
+  return computed.yieldScales[`${year}_${filter}`];
 }
 
 // ── Mode config ──────────────────────────────────
 export interface ModeConfigEntry {
   label: string;
   modeLabel: string;
-  getScale: (year: string, filter: FilterType) => Scale;
-  legendFormat: (v: number) => string;
-  changeDetail: (b: number, e: number) => string;
-  tooltipHtml: (p: Record<string, unknown>) => string | null;
+  getScale: (year: string, filter: FilterType) => Scale | undefined;
+  legendFormat: (value: number) => string;
+  changeDetail: (base: number, end: number) => string;
+  tooltipHtml: (tooltip: TooltipData) => string | null;
 }
 
 type TFn = (key: string) => string;
 
-export function getModeConfig(t: TFn, locale: string, computed: ComputedData): Record<ModeType, ModeConfigEntry> {
+export function getModeConfig(
+  t: TFn,
+  locale: string,
+  computed: ComputedData
+): Record<ModeType, ModeConfigEntry> {
   const loc = locale === "fr" ? "fr-FR" : "en-GB";
   return {
     price: {
       label: t("priceLabel"),
       modeLabel: t("priceModeLabel"),
-      getScale: (year, filter) => computed.scales[`${year}_${filter}`]!,
-      legendFormat: (v) => `${Math.round(v).toLocaleString(loc)} €`,
-      changeDetail: (b, e) =>
-        `<small>${b.toLocaleString(loc)} ${ARROW_DARK} ${e.toLocaleString(loc)} ${t("unitPerSqm")}</small>`,
-      tooltipHtml: (p) =>
-        (p.price as number) >= 0
-          ? `${Number(p.price).toLocaleString(loc)} ${t("unitPerSqm")}<br><small>${p.nb} ${t("unitSales")}</small>`
+      getScale: (year, filter) => computed.scales[`${year}_${filter}`],
+      legendFormat: (value) => `${Math.round(value).toLocaleString(loc)} €`,
+      changeDetail: (base, end) =>
+        `<small>${base.toLocaleString(loc)} ${ARROW_DARK} ${end.toLocaleString(loc)} ${t("unitPerSqm")}</small>`,
+      tooltipHtml: (tooltip) =>
+        tooltip.price >= 0
+          ? `${tooltip.price.toLocaleString(loc)} ${t("unitPerSqm")}<br><small>${tooltip.nb} ${t("unitSales")}</small>`
           : null,
     },
     rent: {
       label: t("rentLabel"),
       modeLabel: t("rentModeLabel"),
-      getScale: (year, filter) => computed.rentScales[`${year}_${filter === "land" ? "residential" : filter}`]!,
-      legendFormat: (v) => `${v.toFixed(1)} €`,
-      changeDetail: (b, e) =>
-        `<small>${b.toFixed(1)} ${ARROW_DARK} ${e.toFixed(1)} ${t("unitPerSqmMonth")}</small>`,
-      tooltipHtml: (p) =>
-        (p.rent as number) >= 0
-          ? `${Number(p.rent).toFixed(1)} ${t("unitPerSqmMonth")}<br><small>${p.rentCount} ${t("unitListings")}</small>`
+      getScale: (year, filter) =>
+        computed.rentScales[
+          `${year}_${filter === "land" ? "residential" : filter}`
+        ],
+      legendFormat: (value) => `${value.toFixed(1)} €`,
+      changeDetail: (base, end) =>
+        `<small>${base.toFixed(1)} ${ARROW_DARK} ${end.toFixed(1)} ${t("unitPerSqmMonth")}</small>`,
+      tooltipHtml: (tooltip) =>
+        tooltip.rent >= 0
+          ? `${tooltip.rent.toFixed(1)} ${t("unitPerSqmMonth")}<br><small>${tooltip.rentCount} ${t("unitListings")}</small>`
           : null,
     },
     yield: {
       label: t("yieldLabel"),
       modeLabel: t("yieldModeLabel"),
-      getScale: (year, filter) => computed.yieldScales[`${year}_${filter}`]!,
-      legendFormat: (v) => `${v.toFixed(1)}%`,
-      changeDetail: (b, e) =>
-        `<small>${b.toFixed(1)}% ${ARROW_DARK} ${e.toFixed(1)}% ${t("unitGrossYear")}</small>`,
-      tooltipHtml: (p) =>
-        (p.yield as number) >= 0
-          ? `${Number(p.yield).toFixed(1)}% ${t("unitGrossYear")}<br><small>${Number(p.price).toLocaleString(loc)} ${t("unitPerSqm")} · ${Number(p.rent).toFixed(1)} ${t("unitPerSqmMonth")}</small>`
+      getScale: (year, filter) => computed.yieldScales[`${year}_${filter}`],
+      legendFormat: (value) => `${value.toFixed(1)}%`,
+      changeDetail: (base, end) =>
+        `<small>${base.toFixed(1)}% ${ARROW_DARK} ${end.toFixed(1)}% ${t("unitGrossYear")}</small>`,
+      tooltipHtml: (tooltip) =>
+        tooltip.yield >= 0
+          ? `${tooltip.yield.toFixed(1)}% ${t("unitGrossYear")}<br><small>${tooltip.price.toLocaleString(loc)} ${t("unitPerSqm")} · ${tooltip.rent.toFixed(1)} ${t("unitPerSqmMonth")}</small>`
           : null,
     },
   };

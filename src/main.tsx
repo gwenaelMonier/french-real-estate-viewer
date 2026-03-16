@@ -6,10 +6,10 @@ import App from "./App";
 import "./App.css";
 import { DataProvider } from "./context/DataContext";
 
-createRoot(document.getElementById("root")!).render(
+createRoot(document.getElementById("root") as HTMLElement).render(
   <StrictMode>
     <DataProvider>
       <App />
     </DataProvider>
-  </StrictMode>,
+  </StrictMode>
 );

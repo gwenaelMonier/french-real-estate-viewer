@@ -1,8 +1,8 @@
-import { Fragment, type ChangeEvent } from "react";
+import { type ChangeEvent, Fragment } from "react";
 import { useTranslation } from "react-i18next";
-import type { FilterType, ModeType } from "../types";
 import { ARROW_DARK } from "../config";
 import { useData } from "../context/DataContext";
+import type { FilterType, ModeType } from "../types";
 
 interface Props {
   activeMode: ModeType;
@@ -86,26 +86,26 @@ export default function FilterPanel({
           ["land", t("filterLand")],
         ];
 
-  const n = years.length - 1;
-  const baseIdx = years.map(String).indexOf(baseYear);
-  const endIdx = years.map(String).indexOf(endYear);
+  const lastIndex = years.length - 1;
+  const baseYearIndex = years.map(String).indexOf(baseYear);
+  const endYearIndex = years.map(String).indexOf(endYear);
 
   const handleBaseSlider = (e: ChangeEvent<HTMLInputElement>) => {
-    const idx = parseInt(e.target.value);
-    if (idx >= endIdx) {
-      e.target.value = String(endIdx - 1);
+    const index = parseInt(e.target.value, 10);
+    if (index >= endYearIndex) {
+      e.target.value = String(endYearIndex - 1);
       return;
     }
-    onBaseYearChange(String(years[idx]));
+    onBaseYearChange(String(years[index]));
   };
 
   const handleEndSlider = (e: ChangeEvent<HTMLInputElement>) => {
-    const idx = parseInt(e.target.value);
-    if (idx <= baseIdx) {
-      e.target.value = String(baseIdx + 1);
+    const index = parseInt(e.target.value, 10);
+    if (index <= baseYearIndex) {
+      e.target.value = String(baseYearIndex + 1);
       return;
     }
-    onEndYearChange(String(years[idx]));
+    onEndYearChange(String(years[index]));
   };
 
   return (
@@ -186,8 +186,8 @@ export default function FilterPanel({
                 <div
                   className="year-slider-fill"
                   style={{
-                    left: `${(baseIdx / n) * 100}%`,
-                    width: `${((endIdx - baseIdx) / n) * 100}%`,
+                    left: `${(baseYearIndex / lastIndex) * 100}%`,
+                    width: `${((endYearIndex - baseYearIndex) / lastIndex) * 100}%`,
                   }}
                 />
               </div>
@@ -196,9 +196,9 @@ export default function FilterPanel({
                 className="year-slider"
                 name="baseYearIdx"
                 min="0"
-                max={n}
+                max={lastIndex}
                 step="1"
-                value={baseIdx}
+                value={baseYearIndex}
                 onChange={handleBaseSlider}
               />
               <input
@@ -206,9 +206,9 @@ export default function FilterPanel({
                 className="year-slider"
                 name="endYearIdx"
                 min="0"
-                max={n}
+                max={lastIndex}
                 step="1"
-                value={endIdx}
+                value={endYearIndex}
                 onChange={handleEndSlider}
               />
             </div>

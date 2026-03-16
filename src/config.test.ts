@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { TEST_COMPUTED } from "./fixtures";
+import { TEST_COMPUTED } from "./test/fixtures";
 import {
   FILTER_FIELDS,
   getScaleForMode,
-} from "../config";
+} from "./config";
 
 const { scales, rentScales, yieldScales, changeScales } = TEST_COMPUTED;
 const computed = TEST_COMPUTED;

@@ -18,7 +18,7 @@ interface CitiesJson {
   changeScales: Record<string, Scale>;
 }
 
-const DataContext = createContext<DataContextValue | null>(null);
+export const DataContext = createContext<DataContextValue | null>(null);
 
 export function useData(): DataContextValue {
   const ctx = useContext(DataContext);

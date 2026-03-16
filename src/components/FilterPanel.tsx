@@ -199,7 +199,7 @@ export default function FilterPanel({
                 max={n}
                 step="1"
                 value={baseIdx}
-                onInput={handleBaseSlider}
+                onChange={handleBaseSlider}
               />
               <input
                 type="range"
@@ -209,7 +209,7 @@ export default function FilterPanel({
                 max={n}
                 step="1"
                 value={endIdx}
-                onInput={handleEndSlider}
+                onChange={handleEndSlider}
               />
             </div>
             <div className="year-slider-ticks">

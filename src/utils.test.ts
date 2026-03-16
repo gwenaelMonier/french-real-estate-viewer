@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalize } from "../utils";
+import { normalize } from "./utils";
 
 describe("normalize", () => {
   it('"Paris" → "paris"', () => {

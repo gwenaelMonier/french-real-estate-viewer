@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TEST_COMMUNES, TEST_COMPUTED } from "./fixtures";
+import { TEST_COMMUNES, TEST_COMPUTED } from "./test/fixtures";
 import {
   getStats,
   getValue,
@@ -9,8 +9,8 @@ import {
   buildCityIndex,
   computeFeatureState,
   getTooltipData,
-} from "../data";
-import { getScaleForMode } from "../config";
+} from "./data";
+import { getScaleForMode } from "./config";
 
 const [communeA, communeB, communeC, communeD] = TEST_COMMUNES;
 

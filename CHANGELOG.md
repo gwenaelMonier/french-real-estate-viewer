@@ -1,5 +1,14 @@
 # Changelog — French real estate viewer
 
+## 3.1.0 — Component tests
+
+- React component tests: `FilterPanel`, `Search`, `Legend`, `LanguageToggle`
+- Shared test infrastructure: `renderWith.tsx`, `fixtures.ts`, `i18n-test.ts`, `setup.ts`
+- Added `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`, `jsdom`
+- `vitest.config.ts` with jsdom environment and setupFiles
+
+---
+
 ## 3.0.0 — PMTiles migration
 
 - **Replaced `cities.json` with PMTiles vector tiles**

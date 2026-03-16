@@ -1,3 +1,4 @@
+import { Search as SearchIcon } from "lucide-react";
 import type maplibregl from "maplibre-gl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -80,6 +81,7 @@ export default function Search({ mapRef }: Props) {
   return (
     <div id="search-control" ref={controlRef}>
       <div className="search-wrap">
+        <SearchIcon size={14} className="search-icon" />
         <input
           id="search-input"
           type="text"

@@ -1,6 +1,17 @@
 # Changelog — French real estate viewer
 
-## 3.2.0 — Biome linting
+## 3.3.0 — Lucide icons
+
+- Added `lucide-react` dependency
+- Mode tabs: icon displayed above label (`DollarSign`, `Home`, `Percent`)
+- ViewMode and filter segmented controls: inline icons (`BarChart2`, `TrendingUp`, `Building2`, `House`, `Building`, `Layers`)
+- Search bar: magnifying glass icon (`SearchIcon`) positioned left of the input
+- CSS: `.mode-tabs label` as `flex-direction: column`, `.seg-group label` as inline flex, `.search-icon` absolutely positioned
+- 4-option filter (Price mode): `seg-group--wrap` switches to a 2×2 grid to prevent the Land button from overflowing
+
+---
+
+##  3.2.0 — Biome linting
 
 - Added **Biome** as linter and formatter (`biome.json`)
 - `lint` (`biome check --write src`) and `lint:check` scripts in `package.json`

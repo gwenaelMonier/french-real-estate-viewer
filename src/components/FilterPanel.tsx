@@ -1,3 +1,15 @@
+import {
+  BarChart2,
+  Building,
+  Building2,
+  DollarSign,
+  Home,
+  House,
+  Layers,
+  type LucideIcon,
+  Percent,
+  TrendingUp,
+} from "lucide-react";
 import { type ChangeEvent, Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import { ARROW_DARK } from "../config";
@@ -24,15 +36,17 @@ function SegGroup({
   options,
   active,
   onChange,
+  wrap,
 }: {
   name: string;
-  options: [string, string][];
+  options: [string, string, LucideIcon?][];
   active: string;
   onChange: (val: string) => void;
+  wrap?: boolean;
 }) {
   return (
-    <div className="seg-group">
-      {options.map(([val, label]) => (
+    <div className={`seg-group${wrap ? " seg-group--wrap" : ""}`}>
+      {options.map(([val, label, Icon]) => (
         <Fragment key={val}>
           <input
             type="radio"
@@ -42,7 +56,10 @@ function SegGroup({
             checked={active === val}
             onChange={() => onChange(val)}
           />
-          <label htmlFor={`seg-${name}-${val}`}>{label}</label>
+          <label htmlFor={`seg-${name}-${val}`}>
+            {Icon && <Icon size={13} />}
+            {label}
+          </label>
         </Fragment>
       ))}
     </div>
@@ -66,24 +83,24 @@ export default function FilterPanel({
   const { t } = useTranslation();
   const { years } = useData();
 
-  const modes: [ModeType, string][] = [
-    ["price", t("modePrice")],
-    ["rent", t("modeRent")],
-    ["yield", t("modeYield")],
+  const modes: [ModeType, string, LucideIcon][] = [
+    ["price", t("modePrice"), DollarSign],
+    ["rent", t("modeRent"), Home],
+    ["yield", t("modeYield"), Percent],
   ];
 
-  const filterOptions: [string, string][] =
+  const filterOptions: [string, string, LucideIcon][] =
     activeMode === "rent" || activeMode === "yield"
       ? [
-          ["residential", t("filterResidential")],
-          ["house", t("filterHouse")],
-          ["apt", t("filterApt")],
+          ["residential", t("filterResidential"), Building2],
+          ["house", t("filterHouse"), House],
+          ["apt", t("filterApt"), Building],
         ]
       : [
-          ["residential", t("filterResidential")],
-          ["house", t("filterHouse")],
-          ["apt", t("filterApt")],
-          ["land", t("filterLand")],
+          ["residential", t("filterResidential"), Building2],
+          ["house", t("filterHouse"), House],
+          ["apt", t("filterApt"), Building],
+          ["land", t("filterLand"), Layers],
         ];
 
   const lastIndex = years.length - 1;
@@ -114,7 +131,7 @@ export default function FilterPanel({
       style={{ position: "absolute", top: 76, left: 10, zIndex: 1 }}
     >
       <div className="mode-tabs">
-        {modes.map(([val, label]) => (
+        {modes.map(([val, label, Icon]) => (
           <Fragment key={val}>
             <input
               type="radio"
@@ -124,7 +141,10 @@ export default function FilterPanel({
               checked={activeMode === val}
               onChange={() => onModeChange(val)}
             />
-            <label htmlFor={`seg-mode-${val}`}>{label}</label>
+            <label htmlFor={`seg-mode-${val}`}>
+              <Icon size={14} />
+              {label}
+            </label>
           </Fragment>
         ))}
       </div>
@@ -134,8 +154,8 @@ export default function FilterPanel({
           <SegGroup
             name="viewMode"
             options={[
-              ["value", t("viewValue")],
-              ["change", t("viewChange")],
+              ["value", t("viewValue"), BarChart2],
+              ["change", t("viewChange"), TrendingUp],
             ]}
             active={showChange ? "change" : "value"}
             onChange={(val) => onViewModeChange(val === "change")}
@@ -148,6 +168,7 @@ export default function FilterPanel({
             options={filterOptions}
             active={activeFilter}
             onChange={(val) => onFilterChange(val as FilterType)}
+            wrap={filterOptions.length > 3}
           />
         </div>
 

@@ -88,7 +88,8 @@ export function getModeConfig(
     price: {
       label: t("priceLabel"),
       modeLabel: t("priceModeLabel"),
-      getScale: (year, filter) => computed.scales[`${year}_${filter}`],
+      getScale: (year, filter) =>
+        getScaleForMode("price", year, filter, computed),
       legendFormat: (value) => `${Math.round(value).toLocaleString(loc)} €`,
       changeDetail: (base, end) =>
         `<small>${base.toLocaleString(loc)} ${ARROW_DARK} ${end.toLocaleString(loc)} ${t("unitPerSqm")}</small>`,
@@ -101,9 +102,7 @@ export function getModeConfig(
       label: t("rentLabel"),
       modeLabel: t("rentModeLabel"),
       getScale: (year, filter) =>
-        computed.rentScales[
-          `${year}_${filter === "land" ? "residential" : filter}`
-        ],
+        getScaleForMode("rent", year, filter, computed),
       legendFormat: (value) => `${value.toFixed(1)} €`,
       changeDetail: (base, end) =>
         `<small>${base.toFixed(1)} ${ARROW_DARK} ${end.toFixed(1)} ${t("unitPerSqmMonth")}</small>`,
@@ -115,7 +114,8 @@ export function getModeConfig(
     yield: {
       label: t("yieldLabel"),
       modeLabel: t("yieldModeLabel"),
-      getScale: (year, filter) => computed.yieldScales[`${year}_${filter}`],
+      getScale: (year, filter) =>
+        getScaleForMode("yield", year, filter, computed),
       legendFormat: (value) => `${value.toFixed(1)}%`,
       changeDetail: (base, end) =>
         `<small>${base.toFixed(1)}% ${ARROW_DARK} ${end.toFixed(1)}% ${t("unitGrossYear")}</small>`,

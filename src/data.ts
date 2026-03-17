@@ -9,9 +9,37 @@ import type {
   YearData,
 } from "./types";
 
-export type { TooltipData } from "./types";
-
 const MIN_SAMPLES_PER_YEAR = 15;
+
+interface ValidatedChange {
+  pct: number;
+  base: number;
+  end: number;
+}
+
+function getValidatedChange(
+  city: City,
+  mode: ModeType,
+  filter: FilterType,
+  baseYear: string,
+  endYear: string
+): ValidatedChange | null {
+  const changeResult = getChange(city, mode, filter, baseYear, endYear);
+  if (!changeResult) {
+    return null;
+  }
+  const fields = FILTER_FIELDS[filter];
+  const countField = mode === "rent" ? fields.rentCount : fields.nb;
+  const baseYearData = city.years?.[baseYear];
+  const endYearData = city.years?.[endYear];
+  const nbBase =
+    countField && baseYearData ? (baseYearData[countField] ?? 0) : 0;
+  const nbEnd = countField && endYearData ? (endYearData[countField] ?? 0) : 0;
+  if (nbBase < MIN_SAMPLES_PER_YEAR || nbEnd < MIN_SAMPLES_PER_YEAR) {
+    return null;
+  }
+  return changeResult;
+}
 
 export function getStats(city: City, activeYear: string): YearData | null {
   if (activeYear === "all") {
@@ -122,33 +150,20 @@ export function computeFeatureState(
   if (!city) {
     return { fillColor: "" };
   }
-  const fields = FILTER_FIELDS[filter];
 
   if (showChange) {
-    const changeResult = getChange(city, mode, filter, baseYear, endYear);
-    const countField = mode === "rent" ? fields.rentCount : fields.nb;
-    const baseYearData = city.years?.[baseYear];
-    const endYearData = city.years?.[endYear];
-    const nbBase =
-      countField && baseYearData ? (baseYearData[countField] ?? 0) : 0;
-    const nbEnd =
-      countField && endYearData ? (endYearData[countField] ?? 0) : 0;
-    const hasEnoughData =
-      changeResult !== null &&
-      nbBase >= MIN_SAMPLES_PER_YEAR &&
-      nbEnd >= MIN_SAMPLES_PER_YEAR;
+    const validated = getValidatedChange(city, mode, filter, baseYear, endYear);
     return {
-      fillColor:
-        changeResult && hasEnoughData
-          ? changeToColor(
-              changeResult.pct,
-              mode,
-              filter,
-              baseYear,
-              endYear,
-              computed.changeScales
-            )
-          : "",
+      fillColor: validated
+        ? changeToColor(
+            validated.pct,
+            mode,
+            filter,
+            baseYear,
+            endYear,
+            computed.changeScales
+          )
+        : "",
     };
   }
 
@@ -181,29 +196,18 @@ export function getTooltipData(
   if (!city) {
     return defaults;
   }
-  const fields = FILTER_FIELDS[filter];
 
   if (showChange) {
-    const changeResult = getChange(city, mode, filter, baseYear, endYear);
-    const countField = mode === "rent" ? fields.rentCount : fields.nb;
-    const baseYearData = city.years?.[baseYear];
-    const endYearData = city.years?.[endYear];
-    const nbBase =
-      countField && baseYearData ? (baseYearData[countField] ?? 0) : 0;
-    const nbEnd =
-      countField && endYearData ? (endYearData[countField] ?? 0) : 0;
-    const hasEnoughData =
-      changeResult !== null &&
-      nbBase >= MIN_SAMPLES_PER_YEAR &&
-      nbEnd >= MIN_SAMPLES_PER_YEAR;
+    const validated = getValidatedChange(city, mode, filter, baseYear, endYear);
     return {
       ...defaults,
-      change: changeResult && hasEnoughData ? changeResult.pct : -999,
-      changeBase: changeResult && hasEnoughData ? changeResult.base : -1,
-      changeEnd: changeResult && hasEnoughData ? changeResult.end : -1,
+      change: validated ? validated.pct : -999,
+      changeBase: validated ? validated.base : -1,
+      changeEnd: validated ? validated.end : -1,
     };
   }
 
+  const fields = FILTER_FIELDS[filter];
   const value = getValue(city, mode, filter, year);
   const stats = getStats(city, year);
   if (mode === "price") {

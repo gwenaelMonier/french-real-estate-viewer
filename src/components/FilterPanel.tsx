@@ -109,8 +109,8 @@ export default function FilterPanel({
         ];
 
   const lastIndex = years.length - 1;
-  const baseYearIndex = years.map(String).indexOf(baseYear);
-  const endYearIndex = years.map(String).indexOf(endYear);
+  const baseYearIndex = years.findIndex((y) => String(y) === baseYear);
+  const endYearIndex = years.findIndex((y) => String(y) === endYear);
 
   const handleBaseSlider = (e: ChangeEvent<HTMLInputElement>) => {
     const index = parseInt(e.target.value, 10);

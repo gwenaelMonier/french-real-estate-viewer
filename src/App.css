@@ -11,6 +11,25 @@ body {
   height: 100vh;
   outline: none;
 }
+/* ── Positioned overlays ─────────────────────── */
+.filter-control {
+  position: absolute;
+  top: 76px;
+  left: 10px;
+  z-index: 2;
+}
+
+.legend {
+  position: absolute;
+  bottom: 36px;
+  left: 10px;
+  z-index: 1;
+}
+
+#filter-fab { display: none; }
+#drawer-backdrop { display: none; }
+.drawer-header { display: none; }
+
 /* ── Legend ─────────────────────────────────── */
 .legend {
   background: white;
@@ -450,6 +469,9 @@ body {
   color: #94a3b8;
 }
 
+/* ── Top bar (desktop passthrough) ──────────── */
+#top-bar { display: contents; }
+
 /* ── Language toggle ─────────────────────────── */
 .lang-toggle {
   position: absolute;
@@ -466,12 +488,13 @@ body {
 .lang-toggle button {
   border: none;
   background: none;
-  padding: 7px 12px;
+  padding: 7px 10px;
   font-size: 12px;
   font-weight: 600;
   color: #94a3b8;
   cursor: pointer;
   font-family: inherit;
+  border-radius: 6px;
   transition:
     color 0.15s,
     background 0.15s;
@@ -480,7 +503,7 @@ body {
   color: #475569;
 }
 .lang-toggle button.active {
-  background: #334155;
+  background: #4880e0;
   color: white;
 }
 
@@ -570,4 +593,151 @@ body {
   100% {
     transform: translateX(100%);
   }
+}
+
+/* ── Mobile layout (≤ 600px) ─────────────────── */
+@media (max-width: 600px) {
+
+  /* Unified top bar */
+  #top-bar {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    z-index: 3;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  /* Search — fills available space, keeps position:relative for dropdown */
+  #top-bar #search-control {
+    position: relative;
+    top: auto;
+    left: auto;
+    flex: 1;
+    width: auto;
+    z-index: auto;
+  }
+  #top-bar #search-input {
+    box-shadow: none;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  /* Dropdown — out of normal flow, displayed below the bar */
+  #top-bar #search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 6px;
+  }
+
+  /* Toggle — pinned right, left separator, transparent background */
+  #top-bar .lang-toggle {
+    position: static;
+    box-shadow: none;
+    background: transparent;
+    border-radius: 0;
+    border-left: 1px solid #e2e8f0;
+    flex-shrink: 0;
+    align-items: center;
+    padding: 0 4px 0 9px;
+    gap: 2px;
+  }
+  #top-bar .lang-toggle button { padding: 6px 10px; font-size: 11px; }
+  #top-bar .lang-toggle button.active { border-radius: 6px; }
+
+  #search-results { max-height: 200px; }
+  #search-results li { padding: 12px 14px; }
+  #search-clear { min-width: 32px; min-height: 32px; display: flex; align-items: center; justify-content: center; }
+
+  /* Legend — aligned with FAB */
+  .legend { bottom: 20px; left: 10px; right: auto; max-width: calc(100vw - 84px); }
+
+  /* FAB */
+  #filter-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 20px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: white;
+    color: #334155;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06);
+    cursor: pointer;
+    z-index: 11;
+    transition: background 0.15s;
+  }
+
+  /* Backdrop */
+  #drawer-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.2);
+    z-index: 9;
+  }
+  #drawer-backdrop.active { display: block; }
+
+  /* Filter panel — bottom sheet */
+  .filter-control {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    max-height: 85vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filter-control::before { display: none; }
+  .filter-control.drawer-open { transform: translateY(0); }
+
+  /* Drawer header — drag handle + close button */
+  .drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 8px 12px 0;
+  }
+  .drawer-header::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    background: #cbd5e1;
+    border-radius: 2px;
+  }
+  .drawer-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: #f1f5f9;
+    color: #64748b;
+    cursor: pointer;
+  }
+
+  /* Touch targets */
+  .mode-tabs label { padding: 12px 4px 11px; }
+  .seg-group label { padding: 10px 8px; }
 }

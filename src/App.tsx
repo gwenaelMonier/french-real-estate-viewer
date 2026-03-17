@@ -1,5 +1,6 @@
 import type maplibregl from "maplibre-gl";
 import { useCallback, useRef, useState } from "react";
+import { SlidersHorizontal, X } from "lucide-react";
 import FilterPanel from "./components/FilterPanel";
 import LanguageToggle from "./components/LanguageToggle";
 import Legend from "./components/Legend";
@@ -14,6 +15,7 @@ export default function App() {
 
   const [activeFilter, setActiveFilter] = useState<FilterType>("residential");
   const [activeYear, setActiveYear] = useState("all");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeMode, setActiveMode] = useState<ModeType>("price");
   const [showChange, setShowChange] = useState(false);
   const [baseYear, setBaseYear] = useState(String(years[0]));
@@ -90,6 +92,8 @@ export default function App() {
         showChange={showChange}
         baseYear={baseYear}
         endYear={endYear}
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
         onModeChange={handleModeChange}
         onFilterChange={handleFilterChange}
         onYearChange={handleYearChange}
@@ -97,8 +101,20 @@ export default function App() {
         onBaseYearChange={handleBaseYearChange}
         onEndYearChange={handleEndYearChange}
       />
-      <Search mapRef={mapRef} />
-      <LanguageToggle />
+      <div id="top-bar">
+        <Search mapRef={mapRef} />
+        <LanguageToggle />
+      </div>
+      <div
+        id="drawer-backdrop"
+        className={isDrawerOpen ? "active" : ""}
+        onClick={() => setIsDrawerOpen(false)}
+      />
+      {!isDrawerOpen && (
+        <button id="filter-fab" onClick={() => setIsDrawerOpen(true)}>
+          <SlidersHorizontal size={20} />
+        </button>
+      )}
     </>
   );
 }

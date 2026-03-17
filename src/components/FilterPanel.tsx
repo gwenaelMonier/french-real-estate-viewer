@@ -9,6 +9,7 @@ import {
   type LucideIcon,
   Percent,
   TrendingUp,
+  X,
 } from "lucide-react";
 import { type ChangeEvent, Fragment } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,6 +24,8 @@ interface Props {
   showChange: boolean;
   baseYear: string;
   endYear: string;
+  isOpen?: boolean;
+  onClose: () => void;
   onModeChange: (mode: ModeType) => void;
   onFilterChange: (filter: FilterType) => void;
   onYearChange: (year: string) => void;
@@ -73,6 +76,8 @@ export default function FilterPanel({
   showChange,
   baseYear,
   endYear,
+  isOpen,
+  onClose,
   onModeChange,
   onFilterChange,
   onYearChange,
@@ -127,9 +132,13 @@ export default function FilterPanel({
 
   return (
     <div
-      className="filter-control"
-      style={{ position: "absolute", top: 76, left: 10, zIndex: 1 }}
+      className={`filter-control${isOpen ? " drawer-open" : ""}`}
     >
+      <div className="drawer-header">
+        <button className="drawer-close" onClick={onClose}>
+          <X size={18} />
+        </button>
+      </div>
       <div className="mode-tabs">
         {modes.map(([val, label, Icon]) => (
           <Fragment key={val}>

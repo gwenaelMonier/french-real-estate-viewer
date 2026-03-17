@@ -38,7 +38,6 @@ export default function Legend({
     return (
       <div
         className="legend"
-        style={{ position: "absolute", bottom: 36, left: 10, zIndex: 1 }}
       >
         <b
           dangerouslySetInnerHTML={{
@@ -64,7 +63,6 @@ export default function Legend({
   return (
     <div
       className="legend"
-      style={{ position: "absolute", bottom: 36, left: 10, zIndex: 1 }}
     >
       <b>{cfg.label}</b>
       <div className="legend-gradient" />

@@ -78,7 +78,7 @@ body {
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  color: #94a3b8;
+  color: #6d7c90;
 }
 
 /* ── Filter panel ────────────────────────────── */
@@ -540,6 +540,7 @@ body {
   color: #64748b;
   font-size: 14px;
   background: #f8fafc;
+  overflow: hidden;
 }
 .loading-label {
   display: flex;
@@ -616,9 +617,10 @@ body {
     z-index: 3;
     background: white;
     border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow:
-      0 4px 20px rgba(0, 0, 0, 0.1),
-      0 1px 4px rgba(0, 0, 0, 0.06);
+      0 4px 24px rgba(0, 0, 0, 0.15),
+      0 1px 4px rgba(0, 0, 0, 0.08);
   }
 
   /* Search — fills available space, keeps position:relative for dropdown */
@@ -685,6 +687,10 @@ body {
     left: 10px;
     right: auto;
     max-width: calc(100vw - 84px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.15),
+      0 1px 4px rgba(0, 0, 0, 0.08);
   }
 
   /* FAB */
@@ -700,10 +706,10 @@ body {
     border-radius: 50%;
     background: white;
     color: #334155;
-    border: none;
+    border: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow:
-      0 4px 20px rgba(0, 0, 0, 0.1),
-      0 1px 4px rgba(0, 0, 0, 0.06);
+      0 4px 24px rgba(0, 0, 0, 0.15),
+      0 1px 4px rgba(0, 0, 0, 0.08);
     cursor: pointer;
     z-index: 11;
     transition: background 0.15s;

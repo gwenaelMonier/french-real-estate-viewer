@@ -92,7 +92,7 @@ export default function MapView({
 
       map.addSource("cities", {
         type: "vector",
-        url: "pmtiles:///cities.pmtiles",
+        url: `pmtiles://${import.meta.env.BASE_URL}cities.pmtiles`,
         promoteId: { cities: "code" },
       });
 

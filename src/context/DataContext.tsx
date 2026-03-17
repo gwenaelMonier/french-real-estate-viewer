@@ -38,7 +38,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<DataContextValue | null>(null);
 
   useEffect(() => {
-    fetch("/cities.json")
+    fetch(`${import.meta.env.BASE_URL}cities.json`)
       .then((response) => response.json())
       .then(
         ({

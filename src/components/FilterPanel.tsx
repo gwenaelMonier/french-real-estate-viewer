@@ -131,9 +131,7 @@ export default function FilterPanel({
   };
 
   return (
-    <div
-      className={`filter-control${isOpen ? " drawer-open" : ""}`}
-    >
+    <div className={`filter-control${isOpen ? " drawer-open" : ""}`}>
       <div className="drawer-header">
         <button className="drawer-close" onClick={onClose}>
           <X size={18} />

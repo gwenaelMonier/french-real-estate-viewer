@@ -36,9 +36,7 @@ export default function Legend({
     const range = Math.max(Math.abs(scale.p4), Math.abs(scale.p96));
 
     return (
-      <div
-        className="legend"
-      >
+      <div className="legend">
         <b
           dangerouslySetInnerHTML={{
             __html: `${t("evolPrefix")} ${modeLabel} ${baseYear} ${ARROW_DARK} ${endYear}`,
@@ -61,9 +59,7 @@ export default function Legend({
   }
 
   return (
-    <div
-      className="legend"
-    >
+    <div className="legend">
       <b>{cfg.label}</b>
       <div className="legend-gradient" />
       <div className="legend-labels">

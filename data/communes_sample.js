@@ -1,4 +1,4 @@
-const COMMUNES = [
+const _COMMUNES = [
   {
     code_commune: 33001,
     nom_commune: "Abzac",

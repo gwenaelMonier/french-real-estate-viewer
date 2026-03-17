@@ -1,6 +1,6 @@
+import { SlidersHorizontal } from "lucide-react";
 import type maplibregl from "maplibre-gl";
 import { useCallback, useRef, useState } from "react";
-import { SlidersHorizontal, X } from "lucide-react";
 import FilterPanel from "./components/FilterPanel";
 import LanguageToggle from "./components/LanguageToggle";
 import Legend from "./components/Legend";
@@ -105,8 +105,9 @@ export default function App() {
         <Search mapRef={mapRef} />
         <LanguageToggle />
       </div>
-      <div
+      <button
         id="drawer-backdrop"
+        type="button"
         className={isDrawerOpen ? "active" : ""}
         onClick={() => setIsDrawerOpen(false)}
       />

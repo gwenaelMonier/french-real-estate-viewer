@@ -10,10 +10,14 @@ describe("normalize", () => {
     expect(normalize("Béziers")).toBe("beziers");
   });
 
-  it('"Saint-Étienne-du-Rouvray" → "saint-etienne-du-rouvray"', () => {
+  it('"Saint-Étienne-du-Rouvray" → "saint etienne du rouvray"', () => {
     expect(normalize("Saint-Étienne-du-Rouvray")).toBe(
-      "saint-etienne-du-rouvray"
+      "saint etienne du rouvray"
     );
+  });
+
+  it('"pont du casse" matches "pont-du-casse"', () => {
+    expect(normalize("pont du casse")).toBe(normalize("pont-du-casse"));
   });
 
   it('"lyon" → "lyon"', () => {

@@ -94,19 +94,15 @@ export default function FilterPanel({
     ["yield", t("modeYield"), Percent],
   ];
 
+  const baseFilterOptions: [string, string, LucideIcon][] = [
+    ["residential", t("filterResidential"), Building2],
+    ["house", t("filterHouse"), House],
+    ["apt", t("filterApt"), Building],
+  ];
   const filterOptions: [string, string, LucideIcon][] =
     activeMode === "rent" || activeMode === "yield"
-      ? [
-          ["residential", t("filterResidential"), Building2],
-          ["house", t("filterHouse"), House],
-          ["apt", t("filterApt"), Building],
-        ]
-      : [
-          ["residential", t("filterResidential"), Building2],
-          ["house", t("filterHouse"), House],
-          ["apt", t("filterApt"), Building],
-          ["land", t("filterLand"), Layers],
-        ];
+      ? baseFilterOptions
+      : [...baseFilterOptions, ["land", t("filterLand"), Layers]];
 
   const lastIndex = years.length - 1;
   const baseYearIndex = years.findIndex((y) => String(y) === baseYear);

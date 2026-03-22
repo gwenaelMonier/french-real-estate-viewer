@@ -1,5 +1,6 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ARROW_DARK, getModeConfig } from "../config";
+import { ARROW_DARK, changeScaleKey, getModeConfig } from "../config";
 import { useData } from "../context/DataContext";
 import type { FilterType, ModeType } from "../types";
 
@@ -22,13 +23,16 @@ export default function Legend({
 }: Props) {
   const { t, i18n } = useTranslation();
   const { computed } = useData();
-  const MODE_CONFIG = getModeConfig(t, i18n.language, computed);
+  const MODE_CONFIG = useMemo(
+    () => getModeConfig(t, i18n.language, computed),
+    [t, i18n.language, computed]
+  );
 
   if (showChange) {
     const { modeLabel } = MODE_CONFIG[activeMode];
     const scale =
       computed.changeScales[
-        `${baseYear}_${endYear}_${activeMode}_${activeFilter}`
+        changeScaleKey(baseYear, endYear, activeMode, activeFilter)
       ];
     if (!scale) {
       return null;

@@ -2,10 +2,8 @@ import { type RenderOptions, render } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { I18nextProvider } from "react-i18next";
 import { DataContext } from "../context/DataContext";
-import { TEST_CITIES, TEST_COMPUTED } from "./fixtures";
+import { TEST_CITIES, TEST_COMPUTED, TEST_YEARS } from "./fixtures";
 import i18nTest from "./i18n-test";
-
-const TEST_YEARS = [2020, 2021, 2022, 2023];
 
 const defaultData = {
   cities: TEST_CITIES,

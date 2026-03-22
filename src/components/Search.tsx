@@ -1,6 +1,6 @@
 import { Search as SearchIcon } from "lucide-react";
 import type maplibregl from "maplibre-gl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useData } from "../context/DataContext";
 import type { City } from "../types";
@@ -20,6 +20,11 @@ export default function Search({ mapRef }: Props) {
   const [showResults, setShowResults] = useState(false);
   const controlRef = useRef<HTMLDivElement>(null);
 
+  const normalizedCities = useMemo(
+    () => cities.map((city) => ({ city, normalized: normalize(city.city_name) })),
+    [cities]
+  );
+
   const handleInput = useCallback(
     (value: string) => {
       setQuery(value);
@@ -29,21 +34,22 @@ export default function Search({ mapRef }: Props) {
         setResults([]);
         return;
       }
-      const matches = cities
-        .filter((city) => normalize(city.city_name).includes(q))
+      const matches = normalizedCities
+        .filter(({ normalized }) => normalized.includes(q))
         .sort((a, b) => {
-          const aStarts = normalize(a.city_name).startsWith(q);
-          const bStarts = normalize(b.city_name).startsWith(q);
+          const aStarts = a.normalized.startsWith(q);
+          const bStarts = b.normalized.startsWith(q);
           if (aStarts !== bStarts) {
             return aStarts ? -1 : 1;
           }
-          return a.city_name.localeCompare(b.city_name);
+          return a.city.city_name.localeCompare(b.city.city_name);
         })
+        .map(({ city }) => city)
         .slice(0, MAX_RESULTS);
       setResults(matches);
       setShowResults(matches.length > 0);
     },
-    [cities]
+    [normalizedCities]
   );
 
   const handleSelect = useCallback(

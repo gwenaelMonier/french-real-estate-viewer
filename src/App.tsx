@@ -1,6 +1,6 @@
 import { SlidersHorizontal } from "lucide-react";
 import type maplibregl from "maplibre-gl";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import FilterPanel from "./components/FilterPanel";
 import LanguageToggle from "./components/LanguageToggle";
 import Legend from "./components/Legend";
@@ -11,7 +11,7 @@ import type { FilterType, ModeType } from "./types";
 
 export default function App() {
   const { years } = useData();
-  const LATEST_YEAR = String(Math.max(...years));
+  const LATEST_YEAR = useMemo(() => String(Math.max(...years)), [years]);
 
   const [activeFilter, setActiveFilter] = useState<FilterType>("residential");
   const [activeYear, setActiveYear] = useState("all");

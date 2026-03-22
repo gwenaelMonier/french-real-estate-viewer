@@ -1,5 +1,10 @@
 import type maplibregl from "maplibre-gl";
-import { FILTER_FIELDS, getScaleForMode, type Scale } from "./config";
+import {
+  changeScaleKey,
+  FILTER_FIELDS,
+  getScaleForMode,
+  type Scale,
+} from "./config";
 import type {
   City,
   ComputedData,
@@ -11,11 +16,11 @@ import type {
 
 const MIN_SAMPLES_PER_YEAR = 15;
 
-interface ValidatedChange {
-  pct: number;
-  base: number;
-  end: number;
+function computeYield(pricePerSqm: number, rent: number): number {
+  return ((rent * 12) / pricePerSqm) * 100;
 }
+
+type ValidatedChange = NonNullable<ReturnType<typeof getChange>>;
 
 function getValidatedChange(
   city: City,
@@ -62,7 +67,7 @@ export function getValue(
   if (mode === "yield") {
     const pricePerSqm = stats[fields.price];
     const rent = fields.rent ? stats[fields.rent] : undefined;
-    return pricePerSqm && rent ? ((rent * 12) / pricePerSqm) * 100 : null;
+    return pricePerSqm && rent ? computeYield(pricePerSqm, rent) : null;
   }
   const field = mode === "rent" ? fields.rent : fields.price;
   return field ? (stats[field] ?? null) : null;
@@ -86,8 +91,8 @@ export function getChange(
     if (!basePricePerSqm || !baseRent || !endPricePerSqm || !endRent) {
       return null;
     }
-    const yieldBase = ((baseRent * 12) / basePricePerSqm) * 100;
-    const yieldEnd = ((endRent * 12) / endPricePerSqm) * 100;
+    const yieldBase = computeYield(basePricePerSqm, baseRent);
+    const yieldEnd = computeYield(endPricePerSqm, endRent);
     return {
       pct: ((yieldEnd - yieldBase) / yieldBase) * 100,
       base: yieldBase,
@@ -119,8 +124,7 @@ export function changeToColor(
   endYear: string,
   changeScales: Record<string, Scale>
 ): string {
-  const scaleKey = `${baseYear}_${endYear}_${mode}_${filter}`;
-  const scale = changeScales[scaleKey];
+  const scale = changeScales[changeScaleKey(baseYear, endYear, mode, filter)];
   if (!scale) {
     return "";
   }

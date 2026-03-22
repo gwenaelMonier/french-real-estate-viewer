@@ -48,6 +48,7 @@ export default function MapView({
     t,
     locale: i18n.language,
     computed,
+    cfg: getModeConfig(t, i18n.language, computed)[activeMode],
   });
   stateRef.current = {
     activeFilter,
@@ -59,6 +60,7 @@ export default function MapView({
     t,
     locale: i18n.language,
     computed,
+    cfg: getModeConfig(t, i18n.language, computed)[activeMode],
   };
 
   // Init map once
@@ -160,9 +162,7 @@ export default function MapView({
           return;
         }
         map.getCanvas().style.cursor = "pointer";
-        const cfg = getModeConfig(state.t, state.locale, state.computed)[
-          state.activeMode
-        ];
+        const cfg = state.cfg;
         const td = getTooltipData(
           city,
           state.activeMode,

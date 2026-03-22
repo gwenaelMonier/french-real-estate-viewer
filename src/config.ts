@@ -49,6 +49,15 @@ export const ARROW_DARK = ARR("#475569");
 // ── Scales (pre-computed by process.py) ──────────
 export type Scale = { p4: number; p96: number };
 
+export function changeScaleKey(
+  baseYear: string,
+  endYear: string,
+  mode: ModeType,
+  filter: FilterType
+): string {
+  return `${baseYear}_${endYear}_${mode}_${filter}`;
+}
+
 export function getScaleForMode(
   mode: ModeType,
   year: string,

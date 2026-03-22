@@ -725,6 +725,7 @@ body {
   }
   #drawer-backdrop.active {
     display: block;
+    touch-action: none;
   }
 
   /* Filter panel — bottom sheet */
@@ -742,6 +743,7 @@ body {
     max-height: 85vh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
   .filter-control::before {
     display: none;

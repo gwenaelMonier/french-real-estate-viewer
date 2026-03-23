@@ -16,8 +16,44 @@ for code_int in range(69381, 69390):
 for code_int in range(13201, 13217):
     ARRONDISSEMENT_MAP[str(code_int)] = ('13055', 'Marseille', '13')
 
+def _load_fusion_map() -> dict[str, str]:
+    """Load commune mergers from INSEE COG: absorbed code → parent code.
+
+    Two sources:
+    - v_commune_2026.csv: current delegated/associated communes (COMD, COMA)
+    - v_mvt_commune_2026.csv: historical movements — catches communes fully
+      absorbed before 2026 that no longer appear in v_commune_2026 at all.
+    """
+    fusion: dict[str, str] = {}
+
+    # Source 1: current COG — communes déléguées and associées
+    with open('data/v_commune_2026.csv', encoding='utf-8') as f:
+        current_coms = set()
+        rows = list(csv_mod.DictReader(f))
+    for row in rows:
+        if row['TYPECOM'] == 'COM':
+            current_coms.add(row['COM'])
+        if row['TYPECOM'] in ('COMD', 'COMA') and row['COMPARENT']:
+            fusion[row['COM']] = row['COMPARENT']
+
+    # Source 2: historical movements — fully absorbed communes (no longer in COG)
+    # MOD 21/31/32/35: various merger types where COM_AV ceases to exist
+    MERGER_MODS = {'21', '31', '32', '35'}
+    with open('data/v_mvt_commune_2026.csv', encoding='utf-8') as f:
+        for row in csv_mod.DictReader(f):
+            av, ap = row['COM_AV'], row['COM_AP']
+            if row['MOD'] in MERGER_MODS and av not in current_coms and ap in current_coms:
+                fusion.setdefault(av, ap)
+
+    return fusion
+
+FUSION_MAP = _load_fusion_map()
+print(f"Commune fusions loaded: {len(FUSION_MAP)}")
+
 def normalize_city_code(code: str) -> str:
-    return ARRONDISSEMENT_MAP[code][0] if code in ARRONDISSEMENT_MAP else code
+    if code in ARRONDISSEMENT_MAP:
+        return ARRONDISSEMENT_MAP[code][0]
+    return FUSION_MAP.get(code, code)
 
 for typ in ('app', 'mai'):
     for year in (2022, 2023, 2024, 2025):
@@ -87,38 +123,41 @@ con = duckdb.connect()
 con.execute("SET memory_limit='2GB'")
 con.execute("SET threads=4")
 
+# Build commune remapping table (arrondissements + fusions)
+con.execute("CREATE TEMP TABLE commune_remap(old_code VARCHAR PRIMARY KEY, new_code VARCHAR)")
+con.executemany("INSERT INTO commune_remap VALUES (?, ?)",
+    [(old, data[0]) for old, data in ARRONDISSEMENT_MAP.items()])
+con.executemany("INSERT OR IGNORE INTO commune_remap VALUES (?, ?)",
+    list(FUSION_MAP.items()))
+
 cursor = con.execute(f"""
     WITH raw AS (
         SELECT
-            id_mutation,
+            src.id_mutation,
+            COALESCE(cr.new_code, src.code_commune) AS code_commune,
             CASE
-                WHEN code_commune BETWEEN '75101' AND '75120' THEN '75056'
-                WHEN code_commune BETWEEN '69381' AND '69389' THEN '69123'
-                WHEN code_commune BETWEEN '13201' AND '13216' THEN '13055'
-                ELSE code_commune
-            END AS code_commune,
-            CASE
-                WHEN code_commune BETWEEN '75101' AND '75120' THEN 'Paris'
-                WHEN code_commune BETWEEN '69381' AND '69389' THEN 'Lyon'
-                WHEN code_commune BETWEEN '13201' AND '13216' THEN 'Marseille'
-                ELSE nom_commune
+                WHEN src.code_commune BETWEEN '75101' AND '75120' THEN 'Paris'
+                WHEN src.code_commune BETWEEN '69381' AND '69389' THEN 'Lyon'
+                WHEN src.code_commune BETWEEN '13201' AND '13216' THEN 'Marseille'
+                ELSE src.nom_commune
             END AS nom_commune,
             CASE
-                WHEN code_commune BETWEEN '75101' AND '75120' THEN '75'
-                WHEN code_commune BETWEEN '69381' AND '69389' THEN '69'
-                WHEN code_commune BETWEEN '13201' AND '13216' THEN '13'
-                ELSE code_departement
+                WHEN src.code_commune BETWEEN '75101' AND '75120' THEN '75'
+                WHEN src.code_commune BETWEEN '69381' AND '69389' THEN '69'
+                WHEN src.code_commune BETWEEN '13201' AND '13216' THEN '13'
+                ELSE src.code_departement
             END AS code_departement,
-            type_local,
-            valeur_fonciere,
-            surface_reelle_bati,
-            latitude, longitude,
-            YEAR(CAST(date_mutation AS DATE)) AS annee
-        FROM read_csv_auto('{CSV}', sample_size=-1)
-        WHERE nature_mutation = 'Vente'
-          AND type_local IN ('Maison', 'Appartement')
-          AND surface_reelle_bati > 0
-          AND valeur_fonciere > 0
+            src.type_local,
+            src.valeur_fonciere,
+            src.surface_reelle_bati,
+            src.latitude, src.longitude,
+            YEAR(CAST(src.date_mutation AS DATE)) AS annee
+        FROM read_csv_auto('{CSV}', sample_size=-1) src
+        LEFT JOIN commune_remap cr ON cr.old_code = src.code_commune
+        WHERE src.nature_mutation = 'Vente'
+          AND src.type_local IN ('Maison', 'Appartement')
+          AND src.surface_reelle_bati > 0
+          AND src.valeur_fonciere > 0
     ),
     -- Aggregate per transaction+city: one transaction can cover multiple lots
     -- (e.g. 2 apartments sold together = same valeur_fonciere, different surfaces)
@@ -144,22 +183,18 @@ cursor = con.execute(f"""
     ),
     raw_terrain AS (
         SELECT
-            id_mutation,
-            CASE
-                WHEN code_commune BETWEEN '75101' AND '75120' THEN '75056'
-                WHEN code_commune BETWEEN '69381' AND '69389' THEN '69123'
-                WHEN code_commune BETWEEN '13201' AND '13216' THEN '13055'
-                ELSE code_commune
-            END AS code_commune,
-            YEAR(CAST(date_mutation AS DATE)) AS annee,
-            valeur_fonciere,
-            surface_terrain
-        FROM read_csv_auto('{CSV}', sample_size=-1)
-        WHERE nature_mutation = 'Vente'
-          AND type_local IS NULL
-          AND nature_culture = 'terrains a bâtir'
-          AND surface_terrain > 0
-          AND valeur_fonciere > 0
+            src.id_mutation,
+            COALESCE(cr.new_code, src.code_commune) AS code_commune,
+            YEAR(CAST(src.date_mutation AS DATE)) AS annee,
+            src.valeur_fonciere,
+            src.surface_terrain
+        FROM read_csv_auto('{CSV}', sample_size=-1) src
+        LEFT JOIN commune_remap cr ON cr.old_code = src.code_commune
+        WHERE src.nature_mutation = 'Vente'
+          AND src.type_local IS NULL
+          AND src.nature_culture = 'terrains a bâtir'
+          AND src.surface_terrain > 0
+          AND src.valeur_fonciere > 0
     ),
     per_terrain AS (
         SELECT
@@ -467,9 +502,25 @@ import subprocess, tempfile, urllib.request, os
 def generate_pmtiles():
     url = "https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/communes-version-simplifiee.geojson"
     out = "public/cities.pmtiles"
-    with tempfile.NamedTemporaryFile(suffix=".geojson", delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(suffix=".geojson", delete=False, mode='w', encoding='utf-8') as tmp:
         print("Downloading communes GeoJSON...")
-        urllib.request.urlretrieve(url, tmp.name)
+        with urllib.request.urlopen(url) as resp:
+            geojson = json.loads(resp.read().decode('utf-8'))
+        # Remap absorbed communes (communes déléguées) to their parent code so
+        # both polygons share the same feature ID and display the parent's data.
+        remapped = 0
+        def remap_feature(f):
+            nonlocal remapped
+            code = f['properties'].get('code')
+            parent = FUSION_MAP.get(code)
+            if parent:
+                remapped += 1
+                return {**f, 'properties': {**f['properties'], 'code': parent}}
+            return f
+        geojson['features'] = [remap_feature(f) for f in geojson['features']]
+        print(f"Remapped {remapped} absorbed communes to their parent code")
+        json.dump(geojson, tmp, ensure_ascii=False)
+        tmp.flush()
         print("Generating PMTiles...")
         subprocess.run([
             "tippecanoe",

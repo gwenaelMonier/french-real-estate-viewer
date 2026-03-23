@@ -61,3 +61,10 @@ Download the data sources and put them in the `/data` folder.
 - https://www.data.gouv.fr/datasets/carte-des-loyers-indicateurs-de-loyers-dannonce-par-commune-en-2024
 - https://www.data.gouv.fr/datasets/carte-des-loyers-indicateurs-de-loyers-dannonce-par-commune-en-2023
 - https://www.data.gouv.fr/datasets/carte-des-loyers-indicateurs-de-loyers-dannonce-par-commune-en-2022
+
+**Merged cities**
+
+- [INSEE COG 2026 cities list](https://www.insee.fr/fr/statistiques/fichier/8740222/v_commune_2026.csv) — delegated/associated communes and their parent (COMD, COMA)
+- [INSEE COG 2026 commune movements](https://www.insee.fr/fr/statistiques/fichier/8740222/v_mvt_commune_2026.csv) — historical mergers for communes fully absorbed before 2026
+
+Both files are used to handle [communes nouvelles](https://www.insee.fr/fr/information/2549968) — French municipal mergers.

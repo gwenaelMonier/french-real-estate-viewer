@@ -6,13 +6,27 @@ CSV = 'data/full_dvf.csv'  # path to the 3.5 GB file
 rent_data = {}  # dict[city_code][year][field]
 rent_meta = {}  # dict[city_code] -> {city_name, dept_code}
 
+# Paris, Lyon and Marseille: DVF/rent data uses arrondissement codes but the
+# polygon file uses the parent commune code. Remap so they match.
+ARRONDISSEMENT_MAP = {}
+for code_int in range(75101, 75121):
+    ARRONDISSEMENT_MAP[str(code_int)] = ('75056', 'Paris', '75')
+for code_int in range(69381, 69390):
+    ARRONDISSEMENT_MAP[str(code_int)] = ('69123', 'Lyon', '69')
+for code_int in range(13201, 13217):
+    ARRONDISSEMENT_MAP[str(code_int)] = ('13055', 'Marseille', '13')
+
+def normalize_city_code(code: str) -> str:
+    return ARRONDISSEMENT_MAP[code][0] if code in ARRONDISSEMENT_MAP else code
+
 for typ in ('app', 'mai'):
     for year in (2022, 2023, 2024, 2025):
         path = f'data/loyer-pred-{typ}-mef-dhup-{year}.csv'
         with open(path, encoding='latin-1') as f:
             reader = csv_mod.DictReader(f, delimiter=';')
             for row in reader:
-                code = row['INSEE_C'].strip().strip('"')
+                raw_code = row['INSEE_C'].strip().strip('"')
+                code = normalize_city_code(raw_code)
                 val = float(row['loypredm2'].replace(',', '.'))
                 if code not in rent_data:
                     rent_data[code] = {}
@@ -23,10 +37,12 @@ for typ in ('app', 'mai'):
                 nb_field = 'rent_count_apt' if typ == 'app' else 'rent_count_house'
                 rent_data[code][year][nb_field] = int(row['nbobs_com'] or 0)
                 if code not in rent_meta:
-                    rent_meta[code] = {
-                        'city_name': row['LIBGEO'].strip().strip('"'),
-                        'dept_code': row['DEP'].strip().strip('"'),
-                    }
+                    if raw_code in ARRONDISSEMENT_MAP:
+                        _, city_name, dept_code = ARRONDISSEMENT_MAP[raw_code]
+                    else:
+                        city_name = row['LIBGEO'].strip().strip('"')
+                        dept_code = row['DEP'].strip().strip('"')
+                    rent_meta[code] = {'city_name': city_name, 'dept_code': dept_code}
 
 # Compute rent_residential (weighted average) and backfill 2022 → 2020, 2021
 for code, by_year in rent_data.items():
@@ -74,7 +90,25 @@ con.execute("SET threads=4")
 cursor = con.execute(f"""
     WITH raw AS (
         SELECT
-            id_mutation, code_commune, nom_commune, code_departement,
+            id_mutation,
+            CASE
+                WHEN code_commune BETWEEN '75101' AND '75120' THEN '75056'
+                WHEN code_commune BETWEEN '69381' AND '69389' THEN '69123'
+                WHEN code_commune BETWEEN '13201' AND '13216' THEN '13055'
+                ELSE code_commune
+            END AS code_commune,
+            CASE
+                WHEN code_commune BETWEEN '75101' AND '75120' THEN 'Paris'
+                WHEN code_commune BETWEEN '69381' AND '69389' THEN 'Lyon'
+                WHEN code_commune BETWEEN '13201' AND '13216' THEN 'Marseille'
+                ELSE nom_commune
+            END AS nom_commune,
+            CASE
+                WHEN code_commune BETWEEN '75101' AND '75120' THEN '75'
+                WHEN code_commune BETWEEN '69381' AND '69389' THEN '69'
+                WHEN code_commune BETWEEN '13201' AND '13216' THEN '13'
+                ELSE code_departement
+            END AS code_departement,
             type_local,
             valeur_fonciere,
             surface_reelle_bati,
@@ -110,7 +144,13 @@ cursor = con.execute(f"""
     ),
     raw_terrain AS (
         SELECT
-            id_mutation, code_commune,
+            id_mutation,
+            CASE
+                WHEN code_commune BETWEEN '75101' AND '75120' THEN '75056'
+                WHEN code_commune BETWEEN '69381' AND '69389' THEN '69123'
+                WHEN code_commune BETWEEN '13201' AND '13216' THEN '13055'
+                ELSE code_commune
+            END AS code_commune,
             YEAR(CAST(date_mutation AS DATE)) AS annee,
             valeur_fonciere,
             surface_terrain

@@ -19,3 +19,15 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+.venv/
+data/full_dvf.csv
+data/loyer-pred-app-mef-dhup-2022.csv
+data/loyer-pred-app-mef-dhup-2023.csv
+data/loyer-pred-app-mef-dhup-2024.csv
+data/loyer-pred-app-mef-dhup-2025.csv
+data/loyer-pred-mai-mef-dhup-2022.csv
+data/loyer-pred-mai-mef-dhup-2023.csv
+data/loyer-pred-mai-mef-dhup-2024.csv
+data/loyer-pred-mai-mef-dhup-2025.csv
+

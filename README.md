@@ -1,5 +1,7 @@
 # French real estate viewer
 
+**[Live demo](https://gwenaelmonier.github.io/french-real-estate-viewer/)**
+
 Visualize price per m², rent per m², and gross yield across French municipalities, with yearly breakdowns and evolution tracking from 2020 to 2025.
 
 ## Features
